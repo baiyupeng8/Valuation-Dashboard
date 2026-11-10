@@ -190,9 +190,7 @@ def main():
         </head>
         <body>
             <div class="container">
-            # <div style="text-align: center; margin-bottom: 20px;">
-            #     <img src="images/logo.png" alt="Logo" style="width: 100px; height: auto;">
-            # </div>
+
                 <h1>📊 个人全资产监控驾驶舱</h1>
                 <ul>
                     {''.join(nav_links)}
