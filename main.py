@@ -165,7 +165,8 @@ def main():
     # 2. 决定是否更新主页和时间
     # 如果所有数据都成功拿到了，才更新主页和时间
     if all_success:
-        bj_time = datetime.now(pytz.timezone('Asia/Shanghai'))
+        # 强制获取标准 UTC 时间并加上 8 小时，彻底摆脱服务器环境干扰
+        bj_time = datetime.utcnow() + timedelta(hours=8)
         update_time = bj_time.strftime('%Y-%m-%d %H:%M:%S')
         print(f"🎉 所有数据更新成功，当前时间: {update_time}")
 
