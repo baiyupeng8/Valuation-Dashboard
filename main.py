@@ -176,6 +176,7 @@ def main():
         <head>
             <meta charset="UTF-8">
             <title>个人全资产监控驾驶舱</title>
+            <link rel="icon" href="images/logo.png" type="image/png">
             <style>
                 body {{ font-family: 'Microsoft YaHei', sans-serif; background: #f4f6f9; padding: 50px; }}
                 .container {{ max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }}
@@ -189,6 +190,9 @@ def main():
         </head>
         <body>
             <div class="container">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <img src="images/logo.png" alt="Logo" style="width: 100px; height: auto;">
+            </div>
                 <h1>📊 个人全资产监控驾驶舱</h1>
                 <ul>
                     {''.join(nav_links)}
