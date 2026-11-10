@@ -162,7 +162,9 @@ def main():
             print(f"✅ {etf['name']} 已生成: {etf['filename']}")
 
     # 3. 生成一个简单的导航主页 index.html
-        # 3. 生成一个简单的导航主页 index.html
+    # 获取当前日期和时间
+    update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -178,10 +180,6 @@ def main():
             a {{ display: block; padding: 15px 20px; background: #e8f0fe; color: #1a73e8; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: bold; transition: background 0.3s; }}
             a:hover {{ background: #d2e3fc; }}
             .footer {{ text-align: center; margin-top: 30px; color: #888; font-size: 14px; }}
-            
-            /* 新增：返回按钮样式 */
-            .back-btn {{ position: fixed; top: 20px; left: 20px; padding: 10px 20px; background: #fff; color: #333; text-decoration: none; border-radius: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); font-weight: bold; z-index: 9999; transition: all 0.3s; }}
-            .back-btn:hover {{ background: #f0f0f0; transform: translateY(-2px); }}
         </style>
     </head>
     <body>
@@ -190,7 +188,7 @@ def main():
             <ul>
                 {''.join(nav_links)}
             </ul>
-            <div class="footer">数据来源: akshare | 生成时间: 每天自动更新</div>
+            <div class="footer">数据来源: akshare | <b>最后更新时间: {update_time}</b></div>
         </div>
     </body>
     </html>
@@ -199,15 +197,20 @@ def main():
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(html_content)
     
-    print("✅ 导航主页已生成: index.html")
-    print("请打开 index.html 查看所有页面。")
-        # =========== 修复：为所有子页面注入返回按钮 ===========
+    print(f"✅ 导航主页已生成: index.html (更新时间: {update_time})")
+
+    # =========== 修复：为所有子页面注入返回按钮和更新时间 ===========
     import os
     
-    back_button_html = """
-    <a href="index.html" style="position: fixed; bottom: 30px; right: 30px; padding: 12px 24px; background: #ff4d4f; color: #fff; text-decoration: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4); font-weight: bold; font-size: 16px; z-index: 99999; transition: all 0.3s;" onmouseover="this.style.background='#ff7875'" onmouseout="this.style.background='#ff4d4f'">
-    🏠 返回主页
-    </a>
+    # 修改：按钮移到右上角 (top: 30px; right: 30px;)
+    # 新增：在按钮旁边加一个更新时间提示标签
+    back_button_html = f"""
+    <div style="position: fixed; top: 20px; right: 30px; z-index: 99999; display: flex; align-items: center; gap: 15px;">
+        <span style="color: #666; font-size: 14px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 15px;">更新于: {update_time}</span>
+        <a href="index.html" style="padding: 10px 20px; background: #ff4d4f; color: #fff; text-decoration: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4); font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#ff7875'" onmouseout="this.style.background='#ff4d4f'">
+        🏠 返回主页
+        </a>
+    </div>
     """
 
     all_sub_files = [t["filename"] for t in targets] + [e["filename"] for e in etf_targets]
@@ -215,16 +218,11 @@ def main():
         if os.path.exists(file):
             with open(file, "r", encoding="utf-8") as f:
                 content = f.read()
-            # 如果之前注入过，先清理掉旧的，防止重复
-            if "🏠 返回主页" in content:
-                # 简单粗暴：截断旧按钮（如果你之前的逻辑没有加过，这一步会自动跳过）
-                pass
-            
-            # 在 </body> 之前插入
+            # 在 </body> 之前插入按钮和更新时间
             content = content.replace("</body>", f"{back_button_html}\n</body>")
             with open(file, "w", encoding="utf-8") as f:
                 f.write(content)
-    print("✅ 所有页面已注入右下角红色返回主页按钮！")
+    print("✅ 所有页面已注入右上角返回按钮和更新时间！")
 
 if __name__ == "__main__":
     main()
