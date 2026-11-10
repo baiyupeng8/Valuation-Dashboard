@@ -3,6 +3,7 @@ import pandas as pd
 from pyecharts import options as opts
 from pyecharts.charts import Line, Page, Tab
 from datetime import datetime, timedelta
+import pytz
 
 # ==========================================
 # 核心计算函数：根据传入的年数，动态画图
@@ -162,8 +163,11 @@ def main():
             print(f"✅ {etf['name']} 已生成: {etf['filename']}")
 
     # 3. 生成一个简单的导航主页 index.html
-    # 获取当前日期和时间
-    update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # # 获取当前日期和时间
+    # update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # 获取北京时间
+    bj_time = datetime.now(pytz.timezone('Asia/Shanghai'))
+    update_time = bj_time.strftime('%Y-%m-%d %H:%M:%S')
     
     html_content = f"""
     <!DOCTYPE html>
