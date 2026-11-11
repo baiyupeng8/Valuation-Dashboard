@@ -3,7 +3,9 @@ name: Daily Valuation Update
 on:
   schedule:
     # 每天北京时间 16:30 (UTC 时间 08:30) 自动运行
-    - cron: '30 8 * * *'
+    # - cron: '30 8 * * *'
+    # 每天北京时间 18:30 (UTC 时间 10:30) 自动运行
+    - cron: '30 10 * * *'
   workflow_dispatch: # 允许你在网页上手动点击运行测试
 
 jobs:
