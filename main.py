@@ -31,25 +31,25 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 
 TARGETS = [
     {
-        "key": "hs300", "name": "沪深300", "code": "000300", "page": "hs300.html",
+        "key": "hs300", "name": "沪深300", "short": "沪深", "code": "000300", "page": "hs300.html",
         "kind": "index", "lg": "沪深300", "cs": "000300", "tx": "sh000300",
         "metric": "市盈率 TTM", "unit": "倍", "tag": "大盘蓝筹",
     },
     {
-        "key": "zz500", "name": "中证500", "code": "000905", "page": "zz500.html",
+        "key": "zz500", "name": "中证500", "short": "中证", "code": "000905", "page": "zz500.html",
         "kind": "index", "lg": "中证500", "cs": "000905", "tx": "sh000905",
         "metric": "市盈率 TTM", "unit": "倍", "tag": "中盘成长",
     },
     {
-        "key": "wly", "name": "五粮液", "code": "000858", "page": "wly.html",
+        "key": "wly", "name": "五粮液", "short": "五粮", "code": "000858", "page": "wly.html",
         "kind": "stock", "metric": "市盈率 TTM", "unit": "倍", "tag": "白酒",
     },
     {
-        "key": "kc50", "name": "科创50", "code": "588000", "page": "kc50.html",
+        "key": "kc50", "name": "科创50", "short": "科创", "code": "588000", "page": "kc50.html",
         "kind": "etf", "metric": "价格", "unit": "元", "tag": "硬科技",
     },
     {
-        "key": "hstech", "name": "恒生科技", "code": "513130", "page": "hstech.html",
+        "key": "hstech", "name": "恒生科技", "short": "恒生", "code": "513130", "page": "hstech.html",
         "kind": "etf", "metric": "价格", "unit": "元", "tag": "港股科技",
     },
 ]
@@ -450,7 +450,7 @@ def head(title, extra_css="", extra_head=""):
 # ==========================================
 INDEX_CSS = """
 .masthead {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px;
   padding: 26px 0 18px; border-bottom: 1px solid var(--line);
 }
 .masthead .brand { display: flex; align-items: center; gap: 10px; font-size: 14px; letter-spacing: .02em; }
@@ -509,6 +509,7 @@ INDEX_CSS = """
   font-size: 12px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px;
 }
 .mark .tag i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+.mark .tag .short { display: none; }
 .mark .tag.l { transform: none; left: -8px; }
 .mark .tag.r { transform: none; left: auto; right: -8px; }
 .gauge .summary { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; }
@@ -529,10 +530,13 @@ INDEX_CSS = """
 .row .name b { font-size: 17px; font-weight: 600; letter-spacing: .01em; }
 .row .name small { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); letter-spacing: .06em; }
 .row .spark { opacity: .8; }
-.row .trend { display: flex; flex-direction: column; gap: 3px; }
+.row .trend { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
 .row .delta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); letter-spacing: .02em; }
 .row .delta.up { color: var(--accent); }
 .row .delta.down { color: var(--cold); }
+.row .delta-m { display: none; font-family: var(--font-mono); }
+.row .delta-m.up { color: var(--accent); }
+.row .delta-m.down { color: var(--cold); }
 .row .val { font-family: var(--font-mono); font-size: 22px; font-weight: 600; letter-spacing: -.01em; text-align: right; }
 .row .val em { font-style: normal; font-size: 11px; color: var(--ink-muted); margin-left: 3px; letter-spacing: 0; }
 .row .badge {
@@ -556,12 +560,19 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
 @media (max-width: 900px) {
   .hero .art { position: static; width: min(320px, 68%); margin: 4px auto -18px; opacity: .7; order: 2; }
   .hero { display: flex; flex-direction: column; }
+  .masthead .brand em { display: none; }
+  .masthead .stamp { font-size: 10px; letter-spacing: .06em; }
   .row { grid-template-columns: 1fr auto; grid-template-areas: "name val" "meta meta" "badge go"; gap: 10px 14px; }
   .row .name { grid-area: name; }
   .row .val { grid-area: val; }
   .row .trend { display: none; }
+  .row .delta-m { display: inline; }
   .row .badge { grid-area: badge; }
   .row .go { grid-area: go; }
+  /* 窄屏刻度标签改用简称，避免叠字 */
+  .mark .tag span:not(.short) { display: none; }
+  .mark .tag .short { display: inline; }
+  .mark .tag { font-size: 11px; gap: 4px; bottom: calc(18px + var(--lane, 0) * 16px); }
 }
 """
 
@@ -587,7 +598,9 @@ def build_gauge_marks(items):
         marks.append(
             f'<div class="mark" style="left:{p:.1f}%;--lane:{lane}">'
             f'<div class="pin {cls}"></div>'
-            f'<div class="tag{align}"><span>{it["name"]}</span><i>{p:.0f}%</i></div></div>'
+            f'<div class="tag{align}"><span>{it["name"]}</span>'
+            f'<span class="short">{it.get("short") or it["name"][:2]}</span>'
+            f'<i>{p:.0f}%</i></div></div>'
         )
     return "".join(marks)
 
@@ -619,7 +632,7 @@ def render_index(items, updated):
         z_cls = "hot" if i["pct"] >= 80 else ("cold" if i["pct"] < 20 else "")
         rows.append(f"""
         <a class="row" href="{i['page']}">
-          <div class="name"><b>{i['name']}</b><small>{i['code']} · {i['tag']}</small></div>
+          <div class="name"><b>{i['name']}</b><small>{i['code']} · {i['tag']}<span class="delta-m {i['delta_cls']}">　近30日 {i['delta']}</span></small></div>
           <div class="trend">{i['spark']}<span class="delta {i['delta_cls']}">近30日 {i['delta']}</span></div>
           <div class="val">{i['cur']:.2f}<em>{i['unit']}</em></div>
           <div class="badge {z_cls}"><span>{i['zone']}</span><span class="pct">{i['pct']:.0f}%</span></div>
@@ -664,7 +677,7 @@ def render_index(items, updated):
     <div class="summary">{''.join(summary_bits)}</div>
   </section>
 
-  <div class="list-head"><h2>逐标的读数</h2><div class="meta">分位取近十年</div></div>
+  <div class="list-head"><h2>逐标的读数</h2><div class="meta">分位取近十年 · 不足十年按全史</div></div>
   <ul class="rows">{''.join(rows)}</ul>
 
   <footer class="site">
@@ -683,7 +696,7 @@ def render_index(items, updated):
 # 4.2 详情页
 # ==========================================
 DETAIL_CSS = """
-.topbar { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 16px; padding: 22px 0; border-bottom: 1px solid var(--line); }
 .back { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-soft); }
 .back:hover { color: var(--accent); }
 .back .arrow { transition: transform .2s ease; }
@@ -742,6 +755,10 @@ tbody tr:first-child td { color: var(--ink); font-weight: 600; }
   .cells { grid-template-columns: 1fr 1fr; }
   .tables { grid-template-columns: 1fr; gap: 6px; }
   #chart { height: 320px; }
+  .card-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .tabs { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { flex: 0 0 auto; white-space: nowrap; font-size: 12.5px; padding: 7px 12px; }
 }
 """
 
@@ -801,8 +818,11 @@ def render_detail(t, series, updated):
 
     updated_short = updated.split(" ")[0]
 
+    span_years = len(base["labels"]) / 12.0
+    span_word = "十年" if span_years >= 9 else f"{max(1, round(span_years))}年"
+
     if pct >= 80:
-        reading = "已经站上十年的 80 分位，这个位置往上的空间，靠的是情绪而不是业绩。"
+        reading = "站在 80 分位以上，这个位置往上靠的是情绪，不是业绩。"
     elif pct >= 60:
         reading = "高于历史中枢，但还没到极端。这时候该看的是持仓结构，不是估值数字。"
     elif pct >= 40:
@@ -810,7 +830,7 @@ def render_detail(t, series, updated):
     elif pct >= 20:
         reading = "低于中枢，估值还有一层安全垫。剩下的问题是基本面会不会继续往下修。"
     else:
-        reading = "处在十年低位。便宜是真的，冷也是真的——先问自己能不能等。"
+        reading = "处在区间底部。便宜是真的，冷也是真的——先问自己能不能等。"
 
     # 月线表（最近 12 期）
     last_m = monthly.tail(12).iloc[::-1]
@@ -822,7 +842,7 @@ def render_detail(t, series, updated):
         t2 = _table([(d.strftime("%m-%d"), f"{v:.2f}") for d, v in zip(last_d["日期"], last_d["数值"])], "交易日")
 
     tabs = [
-        ("10y", "近十年"), ("5y", "近五年"), ("3y", "近三年"), ("1y", "近一年"),
+        ("10y", f"近{span_word}"), ("5y", "近五年"), ("3y", "近三年"), ("1y", "近一年"),
     ]
     if "day" in ranges:
         tabs.append(("day", "日线 · 近一年"))
@@ -866,12 +886,12 @@ def render_detail(t, series, updated):
       <h1>{t['name']}</h1>
       <p class="sub">{t['code']} · 更新至 {updated_short}</p>
       <div class="big"><span class="num">{cur:.2f}</span><span class="unit">{t['unit']}</span></div>
-      <p class="zone">近十年 <b>{pct:.0f}%</b> 分位 · <b>{zone}</b>　较十年均值 {vs_mean:+.1f}%</p>
+      <p class="zone">近{span_word} <b>{pct:.0f}%</b> 分位 · <b>{zone}</b>　较均值 {vs_mean:+.1f}%</p>
       <p class="reading">{reading}</p>
     </div>
     <ul class="kv">
-      <li><span>十年区间</span><b>{base['stats']['lo']:.2f} – {base['stats']['hi']:.2f}</b></li>
-      <li><span>十年均值 / 中位</span><b>{base['stats']['mean']:.2f} / {base['stats']['med']:.2f}</b></li>
+      <li><span>{span_word}区间</span><b>{base['stats']['lo']:.2f} – {base['stats']['hi']:.2f}</b></li>
+      <li><span>均值 / 中位</span><b>{base['stats']['mean']:.2f} / {base['stats']['med']:.2f}</b></li>
       <li><span>20 / 80 分位</span><b>{base['stats']['p20']:.2f} / {base['stats']['p80']:.2f}</b></li>
       <li><span>近 30 个交易日</span><b>{f"{chg30:+.1f}%" if chg30 is not None else "—"}</b></li>
     </ul>

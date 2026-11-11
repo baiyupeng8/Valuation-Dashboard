@@ -1,0 +1,10 @@
+# 本地产物
+build.log
+__pycache__/
+*.pyc
+
+# 预览/截图临时文件
+_probe.html
+_preview.html
+tmp_*.html
+shots/

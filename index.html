@@ -52,7 +52,7 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 .masthead {
-  display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px;
   padding: 26px 0 18px; border-bottom: 1px solid var(--line);
 }
 .masthead .brand { display: flex; align-items: center; gap: 10px; font-size: 14px; letter-spacing: .02em; }
@@ -111,6 +111,7 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
   font-size: 12px; color: var(--ink-soft); display: flex; align-items: center; gap: 6px;
 }
 .mark .tag i { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+.mark .tag .short { display: none; }
 .mark .tag.l { transform: none; left: -8px; }
 .mark .tag.r { transform: none; left: auto; right: -8px; }
 .gauge .summary { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; }
@@ -121,7 +122,7 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
 .list-head h2 { font-size: 15px; font-weight: 600; margin: 0; }
 .rows { list-style: none; margin: 0 0 8px; padding: 0; }
 .row {
-  display: grid; grid-template-columns: minmax(150px, 1.5fr) 150px minmax(92px, .8fr) 132px 28px;
+  display: grid; grid-template-columns: minmax(150px, 240px) minmax(150px, 1fr) 100px 132px 24px;
   align-items: center; gap: 18px; padding: 22px 4px; border-top: 1px solid var(--line);
   transition: background-color .25s ease, padding .25s ease;
 }
@@ -131,10 +132,13 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
 .row .name b { font-size: 17px; font-weight: 600; letter-spacing: .01em; }
 .row .name small { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); letter-spacing: .06em; }
 .row .spark { opacity: .8; }
-.row .trend { display: flex; flex-direction: column; gap: 3px; }
+.row .trend { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; }
 .row .delta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); letter-spacing: .02em; }
 .row .delta.up { color: var(--accent); }
 .row .delta.down { color: var(--cold); }
+.row .delta-m { display: none; font-family: var(--font-mono); }
+.row .delta-m.up { color: var(--accent); }
+.row .delta-m.down { color: var(--cold); }
 .row .val { font-family: var(--font-mono); font-size: 22px; font-weight: 600; letter-spacing: -.01em; text-align: right; }
 .row .val em { font-style: normal; font-size: 11px; color: var(--ink-muted); margin-left: 3px; letter-spacing: 0; }
 .row .badge {
@@ -158,12 +162,19 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
 @media (max-width: 900px) {
   .hero .art { position: static; width: min(320px, 68%); margin: 4px auto -18px; opacity: .7; order: 2; }
   .hero { display: flex; flex-direction: column; }
+  .masthead .brand em { display: none; }
+  .masthead .stamp { font-size: 10px; letter-spacing: .06em; }
   .row { grid-template-columns: 1fr auto; grid-template-areas: "name val" "meta meta" "badge go"; gap: 10px 14px; }
   .row .name { grid-area: name; }
   .row .val { grid-area: val; }
   .row .trend { display: none; }
+  .row .delta-m { display: inline; }
   .row .badge { grid-area: badge; }
   .row .go { grid-area: go; }
+  /* 窄屏刻度标签改用简称，避免叠字 */
+  .mark .tag span:not(.short) { display: none; }
+  .mark .tag .short { display: inline; }
+  .mark .tag { font-size: 11px; gap: 4px; bottom: calc(18px + var(--lane, 0) * 16px); }
 }
 </style>
 
@@ -173,7 +184,7 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
 <main class="wrap">
   <div class="masthead">
     <div class="brand"><span class="dot"></span>BYP 估值温度计 <em>／ 每日收盘后更新</em></div>
-    <div class="meta">2026-11-11 18:39</div>
+    <div class="meta">2026-11-11 18:50</div>
   </div>
 
   <section class="hero">
@@ -198,43 +209,43 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
       <div class="tick" style="left:50%"><span>50</span></div>
       <div class="tick" style="left:80%"><span>80</span></div>
       <div class="tick" style="left:100%"><span>100</span></div>
-      <div class="mark" style="left:17.0%;--lane:0"><div class="pin cold"></div><div class="tag"><span>恒生科技</span><i>17%</i></div></div><div class="mark" style="left:43.0%;--lane:0"><div class="pin "></div><div class="tag"><span>五粮液</span><i>43%</i></div></div><div class="mark" style="left:61.0%;--lane:0"><div class="pin "></div><div class="tag"><span>沪深300</span><i>61%</i></div></div><div class="mark" style="left:62.0%;--lane:1"><div class="pin "></div><div class="tag"><span>中证500</span><i>62%</i></div></div><div class="mark" style="left:63.0%;--lane:2"><div class="pin "></div><div class="tag"><span>科创50</span><i>63%</i></div></div>
+      <div class="mark" style="left:17.0%;--lane:0"><div class="pin cold"></div><div class="tag"><span>恒生科技</span><span class="short">恒生</span><i>17%</i></div></div><div class="mark" style="left:43.0%;--lane:0"><div class="pin "></div><div class="tag"><span>五粮液</span><span class="short">五粮</span><i>43%</i></div></div><div class="mark" style="left:61.0%;--lane:0"><div class="pin "></div><div class="tag"><span>沪深300</span><span class="short">沪深</span><i>61%</i></div></div><div class="mark" style="left:62.0%;--lane:1"><div class="pin "></div><div class="tag"><span>中证500</span><span class="short">中证</span><i>62%</i></div></div><div class="mark" style="left:63.0%;--lane:2"><div class="pin "></div><div class="tag"><span>科创50</span><span class="short">科创</span><i>63%</i></div></div>
     </div>
     <div class="summary"><span>偏热<b>3</b></span><span>中枢<b>1</b></span><span>偏冷<b>1</b></span></div>
   </section>
 
-  <div class="list-head"><h2>逐标的读数</h2><div class="meta">分位取近十年</div></div>
+  <div class="list-head"><h2>逐标的读数</h2><div class="meta">分位取近十年 · 不足十年按全史</div></div>
   <ul class="rows">
         <a class="row" href="hs300.html">
-          <div class="name"><b>沪深300</b><small>000300 · 大盘蓝筹</small></div>
+          <div class="name"><b>沪深300</b><small>000300 · 大盘蓝筹<span class="delta-m down">　近30日 -0.9%</span></small></div>
           <div class="trend"><svg class="spark" viewBox="0 0 140 38" preserveAspectRatio="none" width="140" height="38" aria-hidden="true"><polyline points="1.0,5.7 3.3,6.7 5.7,6.6 8.0,4.0 10.4,4.5 12.7,9.3 15.0,9.2 17.4,8.2 19.7,10.2 22.1,10.6 24.4,9.2 26.7,7.8 29.1,8.6 31.4,16.8 33.7,17.2 36.1,19.3 38.4,19.1 40.8,19.3 43.1,18.4 45.4,18.9 47.8,18.5 50.1,19.3 52.5,20.5 54.8,21.5 57.1,22.5 59.5,21.5 61.8,22.2 64.2,20.6 66.5,19.6 68.8,19.4 71.2,20.3 73.5,22.9 75.8,26.1 78.2,26.0 80.5,23.3 82.9,24.9 85.2,24.6 87.5,25.6 89.9,26.0 92.2,28.0 94.6,29.7 96.9,29.5 99.2,29.4 101.6,30.1 103.9,31.5 106.3,34.0 108.6,31.7 110.9,31.8 113.3,33.6 115.6,32.4 117.9,33.8 120.3,26.9 122.6,25.8 125.0,26.1 127.3,22.8 129.6,22.3 132.0,24.4 134.3,24.4 136.7,21.3 139.0,20.7" fill="none" stroke="#8A948C" stroke-width="1.4" stroke-linecap="round"/><circle cx="139.0" cy="20.7" r="2.6" fill="#C03A2B"/></svg><span class="delta down">近30日 -0.9%</span></div>
           <div class="val">12.65<em>倍</em></div>
           <div class="badge "><span>偏热</span><span class="pct">61%</span></div>
           <div class="go" aria-hidden="true">→</div>
         </a>
         <a class="row" href="zz500.html">
-          <div class="name"><b>中证500</b><small>000905 · 中盘成长</small></div>
+          <div class="name"><b>中证500</b><small>000905 · 中盘成长<span class="delta-m down">　近30日 -15.6%</span></small></div>
           <div class="trend"><svg class="spark" viewBox="0 0 140 38" preserveAspectRatio="none" width="140" height="38" aria-hidden="true"><polyline points="1.0,5.7 3.3,6.6 5.7,6.4 8.0,4.0 10.4,4.1 12.7,8.9 15.0,8.1 17.4,8.0 19.7,9.7 22.1,9.8 24.4,9.1 26.7,6.9 29.1,7.5 31.4,14.9 33.7,15.9 36.1,17.4 38.4,17.1 40.8,18.2 43.1,17.1 45.4,16.9 47.8,17.0 50.1,17.5 52.5,19.1 54.8,19.2 57.1,19.3 59.5,17.9 61.8,18.2 64.2,16.6 66.5,16.0 68.8,16.3 71.2,16.7 73.5,18.6 75.8,21.1 78.2,20.6 80.5,20.3 82.9,22.4 85.2,22.4 87.5,24.2 89.9,24.3 92.2,25.5 94.6,27.8 96.9,27.8 99.2,27.5 101.6,27.0 103.9,27.0 106.3,29.1 108.6,27.3 110.9,28.5 113.3,30.7 115.6,29.3 117.9,31.4 120.3,34.0 122.6,32.3 125.0,33.3 127.3,30.0 129.6,28.7 132.0,30.3 134.3,30.4 136.7,30.8 139.0,30.0" fill="none" stroke="#8A948C" stroke-width="1.4" stroke-linecap="round"/><circle cx="139.0" cy="30.0" r="2.6" fill="#C03A2B"/></svg><span class="delta down">近30日 -15.6%</span></div>
           <div class="val">22.72<em>倍</em></div>
           <div class="badge "><span>偏热</span><span class="pct">62%</span></div>
           <div class="go" aria-hidden="true">→</div>
         </a>
         <a class="row" href="wly.html">
-          <div class="name"><b>五粮液</b><small>000858 · 白酒</small></div>
+          <div class="name"><b>五粮液</b><small>000858 · 白酒<span class="delta-m up">　近30日 +10.1%</span></small></div>
           <div class="trend"><svg class="spark" viewBox="0 0 140 38" preserveAspectRatio="none" width="140" height="38" aria-hidden="true"><polyline points="1.0,8.2 3.3,8.6 5.7,12.5 8.0,16.0 10.4,15.9 12.7,17.8 15.0,17.3 17.4,19.8 19.7,19.0 22.1,18.9 24.4,17.8 26.7,20.0 29.1,18.9 31.4,19.6 33.7,18.0 36.1,20.9 38.4,28.8 40.8,25.2 43.1,26.6 45.4,26.1 47.8,27.4 50.1,29.3 52.5,31.3 54.8,31.0 57.1,31.5 59.5,32.7 61.8,33.0 64.2,30.6 66.5,29.9 68.8,29.1 71.2,29.7 73.5,31.5 75.8,33.6 78.2,34.0 80.5,30.5 82.9,30.2 85.2,29.1 87.5,27.7 89.9,29.3 92.2,28.3 94.6,27.0 96.9,24.9 99.2,22.8 101.6,22.8 103.9,25.1 106.3,25.8 108.6,20.0 110.9,15.2 113.3,15.9 115.6,24.1 117.9,24.4 120.3,17.7 122.6,19.0 125.0,15.4 127.3,16.6 129.6,14.7 132.0,16.0 134.3,17.6 136.7,4.0 139.0,9.5" fill="none" stroke="#8A948C" stroke-width="1.4" stroke-linecap="round"/><circle cx="139.0" cy="9.5" r="2.6" fill="#C03A2B"/></svg><span class="delta up">近30日 +10.1%</span></div>
           <div class="val">23.64<em>倍</em></div>
           <div class="badge "><span>中枢</span><span class="pct">43%</span></div>
           <div class="go" aria-hidden="true">→</div>
         </a>
         <a class="row" href="kc50.html">
-          <div class="name"><b>科创50</b><small>588000 · 硬科技</small></div>
+          <div class="name"><b>科创50</b><small>588000 · 硬科技<span class="delta-m down">　近30日 -24.1%</span></small></div>
           <div class="trend"><svg class="spark" viewBox="0 0 140 38" preserveAspectRatio="none" width="140" height="38" aria-hidden="true"><polyline points="1.0,6.5 3.3,7.4 5.7,7.3 8.0,4.0 10.4,4.0 12.7,9.7 15.0,10.4 17.4,10.4 19.7,12.8 22.1,12.7 24.4,11.4 26.7,8.5 29.1,9.9 31.4,8.9 33.7,10.6 36.1,12.0 38.4,12.2 40.8,13.8 43.1,12.2 45.4,13.2 47.8,13.7 50.1,14.2 52.5,15.1 54.8,16.3 57.1,15.1 59.5,12.0 61.8,12.6 64.2,10.4 66.5,10.2 68.8,9.8 71.2,9.9 73.5,11.8 75.8,14.9 78.2,14.3 80.5,16.1 82.9,19.6 85.2,19.5 87.5,21.0 89.9,21.0 92.2,23.2 94.6,24.1 96.9,24.4 99.2,25.5 101.6,25.0 103.9,25.0 106.3,26.8 108.6,24.8 110.9,26.6 113.3,29.3 115.6,27.8 117.9,30.5 120.3,33.4 122.6,32.0 125.0,34.0 127.3,28.4 129.6,27.6 132.0,29.1 134.3,29.0 136.7,28.6 139.0,28.7" fill="none" stroke="#8A948C" stroke-width="1.4" stroke-linecap="round"/><circle cx="139.0" cy="28.7" r="2.6" fill="#C03A2B"/></svg><span class="delta down">近30日 -24.1%</span></div>
           <div class="val">1.33<em>元</em></div>
           <div class="badge "><span>偏热</span><span class="pct">63%</span></div>
           <div class="go" aria-hidden="true">→</div>
         </a>
         <a class="row" href="hstech.html">
-          <div class="name"><b>恒生科技</b><small>513130 · 港股科技</small></div>
+          <div class="name"><b>恒生科技</b><small>513130 · 港股科技<span class="delta-m down">　近30日 -9.8%</span></small></div>
           <div class="trend"><svg class="spark" viewBox="0 0 140 38" preserveAspectRatio="none" width="140" height="38" aria-hidden="true"><polyline points="1.0,4.7 3.3,4.0 5.7,6.2 8.0,4.0 10.4,5.3 12.7,7.3 15.0,6.2 17.4,5.5 19.7,9.5 22.1,9.7 24.4,8.4 26.7,8.9 29.1,9.5 31.4,9.1 33.7,10.4 36.1,12.2 38.4,13.0 40.8,11.1 43.1,11.5 45.4,13.7 47.8,14.8 50.1,17.2 52.5,17.0 54.8,17.5 57.1,17.9 59.5,17.2 61.8,18.1 64.2,15.2 66.5,15.5 68.8,14.6 71.2,16.1 73.5,16.8 75.8,18.1 78.2,19.4 80.5,19.7 82.9,23.9 85.2,21.9 87.5,22.3 89.9,23.2 92.2,21.4 94.6,25.2 96.9,23.9 99.2,24.3 101.6,25.2 103.9,26.9 106.3,32.5 108.6,30.0 110.9,30.9 113.3,32.7 115.6,31.4 117.9,33.6 120.3,34.0 122.6,31.6 125.0,31.4 127.3,28.9 129.6,23.4 132.0,25.0 134.3,25.4 136.7,24.7 139.0,26.5" fill="none" stroke="#8A948C" stroke-width="1.4" stroke-linecap="round"/><circle cx="139.0" cy="26.5" r="2.6" fill="#C03A2B"/></svg><span class="delta down">近30日 -9.8%</span></div>
           <div class="val">0.49<em>元</em></div>
           <div class="badge cold"><span>偏冷</span><span class="pct">17%</span></div>
@@ -243,7 +254,7 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
 
   <footer class="site">
     <p class="note">指数与个股用市盈率（TTM），ETF 用场内收盘价——ETF 没有可靠的每日披露盈利，价格分位更诚实。</p>
-    <p class="fine">DATA · AKSHARE / 中证指数 / 乐咕乐股 / 百度股市通　|　UPDATE · 2026-11-11 18:39</p>
+    <p class="fine">DATA · AKSHARE / 中证指数 / 乐咕乐股 / 百度股市通　|　UPDATE · 2026-11-11 18:50</p>
   </footer>
 </main>
 <script>
