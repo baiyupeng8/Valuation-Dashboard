@@ -1,37 +1,88 @@
 import akshare as ak
 import pandas as pd
 import os
-from pyecharts import options as opts
-from pyecharts.charts import Line, Page, Tab
+import re
 from datetime import datetime, timedelta
-import pytz
+from pyecharts import options as opts
+from pyecharts.charts import Line, Tab
 
 # ==========================================
-# 核心计算函数：根据传入的年数，动态画图
+# 核心配置与缓存目录
 # ==========================================
+CACHE_DIR = "data_cache"
+os.makedirs(CACHE_DIR, exist_ok=True) # 自动创建 data_cache 文件夹
 
-def generate_pe_chart(symbol_name, index_code, is_stock, years):
-    print(f"正在计算 {symbol_name} - 近 {years} 年数据...")
+# ==========================================
+# 核心函数 1：带缓存的通用数据获取器
+# ==========================================
+def get_data_with_cache(symbol_name, index_code, is_stock=False, etf_code=None):
+    """
+    获取数据，优先读取当天的本地 Excel 缓存，如果没有则调接口并保存。
+    """
+    # 1. 确定缓存文件路径
+    if is_stock:
+        file_name = f"{index_code}_stock.xlsx"
+    elif etf_code:
+        file_name = f"{etf_code}_etf.xlsx"
+    else:
+        file_name = f"{index_code}_index.xlsx"
+        
+    file_path = os.path.join(CACHE_DIR, file_name)
+    today_str = datetime.now().strftime('%Y-%m-%d')
+
+    # 2. 检查本地是否有今天的缓存
+    if os.path.exists(file_path):
+        file_mtime = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime('%Y-%m-%d')
+        if file_mtime == today_str:
+            print(f"✅ 读取本地缓存: {symbol_name} ({file_name})")
+            df = pd.read_excel(file_path)
+            df['日期'] = pd.to_datetime(df['日期'])
+            return df
+
+    # 3. 如果没有缓存或缓存过期，则调用接口
+    print(f"🌐 正在请求接口拉取: {symbol_name} ...")
     try:
-        # 1. 获取数据
         if is_stock:
             df = ak.stock_zh_valuation_baidu(symbol=index_code, indicator="市盈率(TTM)", period="全部")
             df = df.rename(columns={'date': '日期', 'value': '滚动市盈率'})
+        elif etf_code:
+            df = ak.fund_etf_hist_em(symbol=etf_code, period="daily", adjust="qfq")
+            df = df.rename(columns={'收盘': '滚动市盈率'}) # 为了统一处理，把ETF收盘价映射为PE列
         else:
             df = ak.stock_index_pe_lg(symbol=index_code)
             
         df['日期'] = pd.to_datetime(df['日期'])
         df = df.sort_values('日期')
         
-        # 过滤有效数据并计算起始时间
-        df = df[df['滚动市盈率'] > 0]
-        start_date = df['日期'].max() - timedelta(days=365 * years)
-        df_filtered = df[df['日期'] >= start_date].copy()
+        # 4. 成功获取后，立刻保存到 Excel 缓存，明天之前不再调接口
+        df.to_excel(file_path, index=False)
+        print(f"💾 接口拉取成功，已缓存到: {file_path}")
+        return df
+        
+    except Exception as e:
+        print(f"❌ 接口拉取失败 {symbol_name}: {e}")
+        # 接口失败时，尝试读取旧缓存（哪怕不是今天的，也比没有强）
+        if os.path.exists(file_path):
+            print(f"⚠️ 接口失败，降级读取旧缓存: {symbol_name}")
+            df = pd.read_excel(file_path)
+            df['日期'] = pd.to_datetime(df['日期'])
+            return df
+        return None
+
+# ==========================================
+# 核心函数 2：画图逻辑（只负责计算和画图，不负责拿数据）
+# ==========================================
+def generate_chart_from_df(df, symbol_name, years):
+    if df is None or df.empty:
+        return None
+    try:
+        df_filtered = df[df['滚动市盈率'] > 0].copy()
+        start_date = df_filtered['日期'].max() - timedelta(days=365 * years)
+        df_filtered = df_filtered[df_filtered['日期'] >= start_date]
 
         x_data = df_filtered['日期'].dt.strftime('%Y-%m-%d').tolist()
         y_data = df_filtered['滚动市盈率'].tolist()
 
-        # 2. 动态计算当前窗口的分位数
         mean_val = round(df_filtered['滚动市盈率'].mean(), 2)
         high_val = round(df_filtered['滚动市盈率'].quantile(0.8), 2)
         low_val = round(df_filtered['滚动市盈率'].quantile(0.2), 2)
@@ -40,16 +91,15 @@ def generate_pe_chart(symbol_name, index_code, is_stock, years):
         high_line = [high_val] * len(x_data)
         low_line = [low_val] * len(x_data)
 
-        # 3. 画图
         line = (
             Line()
             .add_xaxis(xaxis_data=x_data)
-            .add_yaxis(series_name="滚动PE", y_axis=y_data, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#107C41"), linestyle_opts=opts.LineStyleOpts(width=2), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
+            .add_yaxis(series_name="数据", y_axis=y_data, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#107C41"), linestyle_opts=opts.LineStyleOpts(width=2), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
             .add_yaxis(series_name=f"均值({mean_val})", y_axis=mean_line, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#FFD700"), linestyle_opts=opts.LineStyleOpts(width=1.5, type_="dashed"), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
             .add_yaxis(series_name=f"高估线({high_val})", y_axis=high_line, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#C00000"), linestyle_opts=opts.LineStyleOpts(width=1.5, type_="dashed"), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
             .add_yaxis(series_name=f"低估线({low_val})", y_axis=low_line, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#A0A0A0"), linestyle_opts=opts.LineStyleOpts(width=1.5, type_="dashed"), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
             .set_global_opts(
-                title_opts=opts.TitleOpts(title=f"{symbol_name} 滚动PE估值 (近{years}年)", pos_left="center"),
+                title_opts=opts.TitleOpts(title=f"{symbol_name} 估值 (近{years}年)", pos_left="center"),
                 tooltip_opts=opts.TooltipOpts(trigger="axis", axis_pointer_type="cross"),
                 legend_opts=opts.LegendOpts(pos_bottom="0%"),
                 xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
@@ -59,65 +109,36 @@ def generate_pe_chart(symbol_name, index_code, is_stock, years):
         )
         return line
     except Exception as e:
-        print(f"❌ 计算 {symbol_name} 失败，错误: {e}")
+        print(f"❌ 画图计算出错 {symbol_name}: {e}")
         return None
 
-
-
-
-
+# ==========================================
+# 辅助函数：注入返回按钮
+# ==========================================
+def inject_back_button(filename, update_time):
+    if not os.path.exists(filename): return
+    with open(filename, "r", encoding="utf-8") as f:
+        content = f.read()
+    content = re.sub(r'<div style="position: fixed; top: 20px; right: 30px;.*?</div>', '', content, flags=re.DOTALL)
     
+    btn = f"""<div style="position: fixed; top: 20px; right: 30px; z-index: 99999; display: flex; align-items: center; gap: 15px;">
+    <span style="color: #666; font-size: 14px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 15px;">更新于: {update_time}</span>
+    <a href="index.html" style="padding: 10px 20px; background: #ff4d4f; color: #fff; text-decoration: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4); font-weight: bold; transition: all 0.3s;">🏠 返回主页</a>
+    </div>"""
+    content = content.replace("</body>", f"{btn}\n</body>")
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(content)
 
 # ==========================================
-# ETF 价格分位图（保持之前的逻辑，拿全历史）
-# ==========================================
-def generate_price_chart(symbol_name, etf_code):
-    print(f"正在获取 {symbol_name} 历史价格数据...")
-    try:
-        df = ak.fund_etf_hist_em(symbol=etf_code, period="daily", adjust="qfq")
-        df['日期'] = pd.to_datetime(df['日期'])
-        df = df.sort_values('日期')
-        df_filtered = df[df['日期'] >= "2014-01-01"].copy()
-
-        x_data = df_filtered['日期'].dt.strftime('%Y-%m-%d').tolist()
-        y_data = df_filtered['收盘'].tolist()
-
-        mean_val = round(df_filtered['收盘'].mean(), 3)
-        high_val = round(df_filtered['收盘'].quantile(0.8), 3)
-        low_val = round(df_filtered['收盘'].quantile(0.2), 3)
-
-        mean_line = [mean_val] * len(x_data)
-        high_line = [high_val] * len(x_data)
-        low_line = [low_val] * len(x_data)
-
-        line = (
-            Line()
-            .add_xaxis(xaxis_data=x_data)
-            .add_yaxis(series_name="收盘价", y_axis=y_data, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#1f77b4"), linestyle_opts=opts.LineStyleOpts(width=2), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
-            .add_yaxis(series_name=f"均值({mean_val})", y_axis=mean_line, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#FFD700"), linestyle_opts=opts.LineStyleOpts(width=1.5, type_="dashed"), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
-            .add_yaxis(series_name=f"高估线({high_val})", y_axis=high_line, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#C00000"), linestyle_opts=opts.LineStyleOpts(width=1.5, type_="dashed"), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
-            .add_yaxis(series_name=f"低估线({low_val})", y_axis=low_line, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#A0A0A0"), linestyle_opts=opts.LineStyleOpts(width=1.5, type_="dashed"), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
-            .set_global_opts(
-                title_opts=opts.TitleOpts(title=f"{symbol_name} 价格分位监控", pos_left="center"),
-                tooltip_opts=opts.TooltipOpts(trigger="axis", axis_pointer_type="cross"),
-                legend_opts=opts.LegendOpts(pos_bottom="0%"),
-                xaxis_opts=opts.AxisOpts(type_="category", boundary_gap=False),
-                yaxis_opts=opts.AxisOpts(type_="value", splitline_opts=opts.SplitLineOpts(is_show=False)),
-                datazoom_opts=[opts.DataZoomOpts(range_start=0, range_end=100)]
-            )
-        )
-        return line
-    except Exception as e:
-        print(f"❌ 获取 {symbol_name} 失败: {e}")
-        return None
-
-# ==========================================
-# 组装主页面和 Tab 选项卡
+# 主流程
 # ==========================================
 def main():
-    print("开始生成全景看板 (含动态时间窗口)...")
-
+    print("开始生成全景看板 (缓存加速版)...")
     
+    # 获取北京时间
+    bj_time = datetime.utcnow() + timedelta(hours=8)
+    update_time = bj_time.strftime('%Y-%m-%d %H:%M:%S')
+
     targets = [
         {"name": "沪深300", "code": "沪深300", "is_stock": False, "filename": "hs300.html"},
         {"name": "中证500", "code": "中证500", "is_stock": False, "filename": "zz500.html"},
@@ -130,105 +151,81 @@ def main():
     ]
 
     nav_links = []
-    all_success = True # 记录是否所有数据都成功抓取
+    all_success = True
 
-    # 1. 预先生成并检查所有图表数据
+    # 1. 处理 PE 指数和个股
     for t in targets:
+        # 【关键】：这里只调用一次获取数据，不管是画 10 年还是 3 年
+        df = get_data_with_cache(t['name'], t['code'], is_stock=t['is_stock'])
+        
         tab = Tab()
         tab_success = True
         for years in [10, 5, 3]:
-            chart = generate_pe_chart(t['name'], t['code'], t['is_stock'], years)
+            chart = generate_chart_from_df(df, t['name'], years)
             if chart:
                 tab.add(chart, f"近 {years} 年")
             else:
                 tab_success = False
         
-        # 只要有任何一个年份抓取失败，就视为失败，不渲染，保留旧文件
-        if tab_success and len(tab._charts) > 0:
+        if tab_success and df is not None:
             tab.render(t['filename'])
             nav_links.append(f'<li><a href="{t["filename"]}" target="_blank">{t["name"]} (10/5/3年切换)</a></li>')
-            print(f"✅ {t['name']} 已更新: {t['filename']}")
+            inject_back_button(t['filename'], update_time)
+            print(f"✅ {t['name']} 网页生成成功")
         else:
             all_success = False
-            print(f"⚠️ {t['name']} 数据获取失败，保留旧网页。")
+            print(f"⚠️ {t['name']} 数据异常，保留旧网页。")
 
+    # 2. 处理 ETF
     for etf in etf_targets:
-        chart = generate_price_chart(etf['name'], etf['code'])
+        df = get_data_with_cache(etf['name'], "", etf_code=etf['code'])
+        # ETF 只画全历史或近10年
+        chart = generate_chart_from_df(df, etf['name'], years=10)
+        
         if chart:
             chart.render(etf['filename'])
             nav_links.append(f'<li><a href="{etf["filename"]}" target="_blank">{etf["name"]} (价格分位)</a></li>')
-            print(f"✅ {etf['name']} 已更新: {etf['filename']}")
+            inject_back_button(etf['filename'], update_time)
+            print(f"✅ {etf['name']} 网页生成成功")
         else:
             all_success = False
-            print(f"⚠️ {etf['name']} 数据获取失败，保留旧网页。")
+            print(f"⚠️ {etf['name']} 数据异常，保留旧网页。")
 
-    # 2. 决定是否更新主页和时间
-    # 如果所有数据都成功拿到了，才更新主页和时间
+    # 3. 生成带炫酷 UI 的主页
     if all_success:
-        # 强制获取标准 UTC 时间并加上 8 小时，彻底摆脱服务器环境干扰
-        bj_time = datetime.utcnow() + timedelta(hours=8)
-        update_time = bj_time.strftime('%Y-%m-%d %H:%M:%S')
-        print(f"🎉 所有数据更新成功，当前时间: {update_time}")
-
         html_content = f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>个人全资产监控驾驶舱</title>
             <link rel="icon" href="images/logo.png" type="image/png">
             <style>
-                body {{ font-family: 'Microsoft YaHei', sans-serif; background: #f4f6f9; padding: 50px; }}
-                .container {{ max-width: 800px; margin: 0 auto; background: #fff; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }}
-                h1 {{ text-align: center; color: #333; margin-bottom: 30px; }}
-                ul {{ list-style: none; padding: 0; }}
-                li {{ margin: 15px 0; }}
-                a {{ display: block; padding: 15px 20px; background: #e8f0fe; color: #1a73e8; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: bold; transition: background 0.3s; }}
-                a:hover {{ background: #d2e3fc; }}
-                .footer {{ text-align: center; margin-top: 30px; color: #888; font-size: 14px; }}
+                body {{ font-family: -apple-system, 'Microsoft YaHei', sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); min-height: 100vh; margin: 0; padding: 40px 20px; display: flex; justify-content: center; align-items: center; color: #fff; }}
+                .container {{ width: 100%; max-width: 600px; background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }}
+                h1 {{ text-align: center; color: #f8fafc; font-size: 28px; margin-bottom: 40px; }}
+                ul {{ list-style: none; padding: 0; margin: 0; }}
+                li {{ margin-bottom: 16px; }}
+                a {{ display: flex; align-items: center; padding: 20px 24px; background: rgba(255, 255, 255, 0.03); color: #e2e8f0; text-decoration: none; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; font-size: 18px; transition: all 0.3s; }}
+                a:hover {{ background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.3); transform: translateY(-4px) scale(1.02); box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4); color: #ffffff; }}
+                .footer {{ text-align: center; margin-top: 40px; color: #94a3b8; font-size: 13px; }}
             </style>
         </head>
         <body>
             <div class="container">
-
-                <h1>📊 个人全资产监控驾驶舱</h1>
-                <ul>
-                    {''.join(nav_links)}
-                </ul>
+                <h1>📊 个人大A监控驾驶舱</h1>
+                <ul>{''.join(nav_links)}</ul>
                 <div class="footer">数据来源: akshare | <b>最后更新时间: {update_time}</b></div>
             </div>
         </body>
         </html>
         """
-        
         with open("index.html", "w", encoding="utf-8") as f:
             f.write(html_content)
-
-        # 3. 为所有子页面注入返回按钮和更新时间 (只有在全部成功时才执行注入)
-        back_button_html = f"""
-        <div style="position: fixed; top: 20px; right: 30px; z-index: 99999; display: flex; align-items: center; gap: 15px;">
-            <span style="color: #666; font-size: 14px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 15px;">更新于: {update_time}</span>
-            <a href="index.html" style="padding: 10px 20px; background: #ff4d4f; color: #fff; text-decoration: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4); font-weight: bold; transition: all 0.3s;" onmouseover="this.style.background='#ff7875'" onmouseout="this.style.background='#ff4d4f'">
-            🏠 返回主页
-            </a>
-        </div>
-        """
-
-        all_sub_files = [t["filename"] for t in targets] + [e["filename"] for e in etf_targets]
-        for file in all_sub_files:
-            if os.path.exists(file):
-                with open(file, "r", encoding="utf-8") as f:
-                    content = f.read()
-                # 先清理掉旧按钮（如果有），防止重复
-                import re
-                content = re.sub(r'<div style="position: fixed; top: 20px; right: 30px;.*?</div>', '', content, flags=re.DOTALL)
-                # 在 </body> 之前插入新按钮
-                content = content.replace("</body>", f"{back_button_html}\n</body>")
-                with open(file, "w", encoding="utf-8") as f:
-                    f.write(content)
-        print("✅ 所有页面已注入右上角返回按钮和更新时间！")
+        print("🎉 所有数据更新成功！主页已刷新。")
     else:
-        print("❌ 有部分数据获取失败，本次不更新主页和时间，保留上次成功的数据。")
+        print("❌ 部分数据获取失败，为了安全起见，保留上次成功的数据和主页。")
 
 if __name__ == "__main__":
     main()
