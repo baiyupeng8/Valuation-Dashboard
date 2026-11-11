@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Awesome-pyecharts</title>
+    <link rel="icon" href="images/logo.png" type="image/png">
                 <script type="text/javascript" src="https://assets.pyecharts.org/assets/v6/echarts.min.js"></script>
 
     
@@ -42,18 +43,18 @@
         }
     </style>
     <div class="tab">
-            <button class="tablinks" onclick="showChart(event, '1225ca6928ec4d52b740301d5e0b5b80')">近 10 年</button>
-            <button class="tablinks" onclick="showChart(event, '5d90c5981baa4e97aee1e0154a0eea8e')">近 5 年</button>
-            <button class="tablinks" onclick="showChart(event, 'e883f2b5b147448f834c9b4c89bb8847')">近 3 年</button>
+            <button class="tablinks" onclick="showChart(event, '0d0289336d964863ba1b18a7ff7aa97b')">近 10 年</button>
+            <button class="tablinks" onclick="showChart(event, 'c9a98c0fb6c240cb98d00e5e01907f8b')">近 5 年</button>
+            <button class="tablinks" onclick="showChart(event, '5eee4b84f7e94e679799cb4b9ffd72d2')">近 3 年</button>
     </div>
 
     <div class="box">
-                <div id="1225ca6928ec4d52b740301d5e0b5b80" class="chart-container" style="width:900px; height:500px; "></div>
+                <div id="0d0289336d964863ba1b18a7ff7aa97b" class="chart-container" style="width:100%; height:600px; "></div>
     <script>
-            document.getElementById('1225ca6928ec4d52b740301d5e0b5b80').style.width = document.getElementById('1225ca6928ec4d52b740301d5e0b5b80').parentNode.clientWidth + 'px';
-        var chart_1225ca6928ec4d52b740301d5e0b5b80 = echarts.init(
-            document.getElementById('1225ca6928ec4d52b740301d5e0b5b80'), 'white', {renderer: 'canvas', locale: 'ZH'});
-        var option_1225ca6928ec4d52b740301d5e0b5b80 = {
+            document.getElementById('0d0289336d964863ba1b18a7ff7aa97b').style.width = document.getElementById('0d0289336d964863ba1b18a7ff7aa97b').parentNode.clientWidth + 'px';
+        var chart_0d0289336d964863ba1b18a7ff7aa97b = echarts.init(
+            document.getElementById('0d0289336d964863ba1b18a7ff7aa97b'), 'white', {renderer: 'canvas', locale: 'ZH'});
+        var option_0d0289336d964863ba1b18a7ff7aa97b = {
     "animation": true,
     "animationThreshold": 2000,
     "animationDuration": 1000,
@@ -2461,14 +2462,17 @@
         }
     ]
 };
-        chart_1225ca6928ec4d52b740301d5e0b5b80.setOption(option_1225ca6928ec4d52b740301d5e0b5b80);
+        chart_0d0289336d964863ba1b18a7ff7aa97b.setOption(option_0d0289336d964863ba1b18a7ff7aa97b);
+            window.addEventListener('resize', function(){
+                chart_0d0289336d964863ba1b18a7ff7aa97b.resize();
+            })
     </script>
-                <div id="5d90c5981baa4e97aee1e0154a0eea8e" class="chart-container" style="width:900px; height:500px; "></div>
+                <div id="c9a98c0fb6c240cb98d00e5e01907f8b" class="chart-container" style="width:100%; height:600px; "></div>
     <script>
-            document.getElementById('5d90c5981baa4e97aee1e0154a0eea8e').style.width = document.getElementById('5d90c5981baa4e97aee1e0154a0eea8e').parentNode.clientWidth + 'px';
-        var chart_5d90c5981baa4e97aee1e0154a0eea8e = echarts.init(
-            document.getElementById('5d90c5981baa4e97aee1e0154a0eea8e'), 'white', {renderer: 'canvas', locale: 'ZH'});
-        var option_5d90c5981baa4e97aee1e0154a0eea8e = {
+            document.getElementById('c9a98c0fb6c240cb98d00e5e01907f8b').style.width = document.getElementById('c9a98c0fb6c240cb98d00e5e01907f8b').parentNode.clientWidth + 'px';
+        var chart_c9a98c0fb6c240cb98d00e5e01907f8b = echarts.init(
+            document.getElementById('c9a98c0fb6c240cb98d00e5e01907f8b'), 'white', {renderer: 'canvas', locale: 'ZH'});
+        var option_c9a98c0fb6c240cb98d00e5e01907f8b = {
     "animation": true,
     "animationThreshold": 2000,
     "animationDuration": 1000,
@@ -3856,14 +3860,17 @@
         }
     ]
 };
-        chart_5d90c5981baa4e97aee1e0154a0eea8e.setOption(option_5d90c5981baa4e97aee1e0154a0eea8e);
+        chart_c9a98c0fb6c240cb98d00e5e01907f8b.setOption(option_c9a98c0fb6c240cb98d00e5e01907f8b);
+            window.addEventListener('resize', function(){
+                chart_c9a98c0fb6c240cb98d00e5e01907f8b.resize();
+            })
     </script>
-                <div id="e883f2b5b147448f834c9b4c89bb8847" class="chart-container" style="width:900px; height:500px; "></div>
+                <div id="5eee4b84f7e94e679799cb4b9ffd72d2" class="chart-container" style="width:100%; height:600px; "></div>
     <script>
-            document.getElementById('e883f2b5b147448f834c9b4c89bb8847').style.width = document.getElementById('e883f2b5b147448f834c9b4c89bb8847').parentNode.clientWidth + 'px';
-        var chart_e883f2b5b147448f834c9b4c89bb8847 = echarts.init(
-            document.getElementById('e883f2b5b147448f834c9b4c89bb8847'), 'white', {renderer: 'canvas', locale: 'ZH'});
-        var option_e883f2b5b147448f834c9b4c89bb8847 = {
+            document.getElementById('5eee4b84f7e94e679799cb4b9ffd72d2').style.width = document.getElementById('5eee4b84f7e94e679799cb4b9ffd72d2').parentNode.clientWidth + 'px';
+        var chart_5eee4b84f7e94e679799cb4b9ffd72d2 = echarts.init(
+            document.getElementById('5eee4b84f7e94e679799cb4b9ffd72d2'), 'white', {renderer: 'canvas', locale: 'ZH'});
+        var option_5eee4b84f7e94e679799cb4b9ffd72d2 = {
     "animation": true,
     "animationThreshold": 2000,
     "animationDuration": 1000,
@@ -4843,7 +4850,10 @@
         }
     ]
 };
-        chart_e883f2b5b147448f834c9b4c89bb8847.setOption(option_e883f2b5b147448f834c9b4c89bb8847);
+        chart_5eee4b84f7e94e679799cb4b9ffd72d2.setOption(option_5eee4b84f7e94e679799cb4b9ffd72d2);
+            window.addEventListener('resize', function(){
+                chart_5eee4b84f7e94e679799cb4b9ffd72d2.resize();
+            })
     </script>
     </div>
 
@@ -4873,7 +4883,7 @@
         }
     </script>
 <div style="position: fixed; top: 20px; right: 30px; z-index: 99999; display: flex; align-items: center; gap: 15px;">
-    <span style="color: #666; font-size: 14px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 15px;">更新于: 2026-11-11 11:53:11</span>
+    <span style="color: #666; font-size: 14px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 15px;">更新于: 2026-11-11 11:58:54</span>
     <a href="index.html" style="padding: 10px 20px; background: #ff4d4f; color: #fff; text-decoration: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4); font-weight: bold; transition: all 0.3s;">🏠 返回主页</a>
     </div>
 </body>
