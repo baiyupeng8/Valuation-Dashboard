@@ -92,7 +92,7 @@ def generate_chart_from_df(df, symbol_name, years):
         low_line = [low_val] * len(x_data)
 
         line = (
-            Line()
+            Line(init_opts=opts.InitOpts(width="100%", height="600px"))
             .add_xaxis(xaxis_data=x_data)
             .add_yaxis(series_name="数据", y_axis=y_data, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#107C41"), linestyle_opts=opts.LineStyleOpts(width=2), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
             .add_yaxis(series_name=f"均值({mean_val})", y_axis=mean_line, is_symbol_show=False, itemstyle_opts=opts.ItemStyleOpts(color="#FFD700"), linestyle_opts=opts.LineStyleOpts(width=1.5, type_="dashed"), label_opts=opts.LabelOpts(is_show=False), markline_opts=opts.MarkLineOpts(is_silent=True, data=[]))
@@ -113,19 +113,32 @@ def generate_chart_from_df(df, symbol_name, years):
         return None
 
 # ==========================================
-# 辅助函数：注入返回按钮
+# 辅助函数：注入返回按钮 + 全局图标 (暴力版)
 # ==========================================
 def inject_back_button(filename, update_time):
     if not os.path.exists(filename): return
     with open(filename, "r", encoding="utf-8") as f:
         content = f.read()
+    
+    # 1. 清理旧按钮
     content = re.sub(r'<div style="position: fixed; top: 20px; right: 30px;.*?</div>', '', content, flags=re.DOTALL)
     
+    # 2. 注入图标（暴力替换所有闭合标签）
+    icon_html = '<link rel="icon" href="images/logo.png" type="image/png">'
+    if 'rel="icon"' in content:
+        # 如果已经有旧的图标代码，直接替换掉旧的
+        content = re.sub(r'<link rel="icon".*?>', icon_html, content)
+    else:
+        # 如果没有，强行塞在 </title> 后面
+        content = content.replace("</title>", f"</title>\n    {icon_html}")
+    
+    # 3. 注入返回按钮
     btn = f"""<div style="position: fixed; top: 20px; right: 30px; z-index: 99999; display: flex; align-items: center; gap: 15px;">
     <span style="color: #666; font-size: 14px; background: rgba(255,255,255,0.8); padding: 5px 10px; border-radius: 15px;">更新于: {update_time}</span>
     <a href="index.html" style="padding: 10px 20px; background: #ff4d4f; color: #fff; text-decoration: none; border-radius: 30px; box-shadow: 0 4px 12px rgba(255, 77, 79, 0.4); font-weight: bold; transition: all 0.3s;">🏠 返回主页</a>
     </div>"""
     content = content.replace("</body>", f"{btn}\n</body>")
+    
     with open(filename, "w", encoding="utf-8") as f:
         f.write(content)
 
