@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>恒生科技·南方 · 估值温度计</title>
+<meta name="description" content="个人估值温度计：沪深300、中证500、五粮液、科创50、恒生科技、恒生科技·易方达、恒生科技·南方、上证指数ETF的估值分位与走势">
+<link rel="icon" href="images/logo.png" type="image/png">
+<style>
+:root {
+  --canvas: #F7F5EF;
+  --shell: #FFFDF8;
+  --ink: #1B211C;
+  --ink-soft: #4C554E;
+  --ink-muted: #8A948C;
+  --line: #E3DFD3;
+  --accent: #C03A2B;
+  --accent-soft: #F0DCD6;
+  --cold: #2F6A55;
+  --cold-soft: #DDE9E2;
+  --mid: #A9A296;
+  --r-shell: 28px;
+  --r-card: 16px;
+  --r-control: 10px;
+  --r-pill: 999px;
+  --font-serif: "Songti SC", "STSong", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SF Mono", "JetBrains Mono", "IBM Plex Mono", "Consolas", ui-monospace, monospace;
+  --shadow-card: 0 1px 2px rgba(27,33,28,.04), 0 10px 22px -8px rgba(27,33,28,.08),
+                 0 30px 60px -30px rgba(27,33,28,.10);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--canvas); color: var(--ink);
+  font-family: var(--font-sans); font-size: 16px; line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(120% 70% at 78% -10%, rgba(192,58,43,.05), transparent 60%);
+  background-repeat: no-repeat;
+}
+a { color: inherit; text-decoration: none; }
+.wrap { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 32px); }
+.meta {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--ink-muted);
+}
+.kicker {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--accent); margin: 0 0 18px;
+}
+hr.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+.topbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 16px; padding: 22px 0; border-bottom: 1px solid var(--line); }
+.back { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--ink-soft); }
+.back:hover { color: var(--accent); }
+.back .arrow { transition: transform .2s ease; }
+.back:hover .arrow { transform: translateX(-3px); }
+
+.readout { display: grid; grid-template-columns: 1.1fr .9fr; gap: clamp(24px, 4vw, 56px); padding: clamp(32px, 5vw, 56px) 0 clamp(24px, 3vw, 36px); align-items: end; }
+.readout h1 { font-family: var(--font-serif); font-size: clamp(1.75rem, 3vw, 2.5rem); margin: 0 0 6px; font-weight: 700; letter-spacing: .01em; }
+.readout .sub { margin: 0; font-size: 13px; color: var(--ink-muted); }
+.readout .big { display: flex; align-items: baseline; gap: 8px; margin: 18px 0 6px; }
+.readout .big .num { font-family: var(--font-mono); font-size: clamp(2.6rem, 5vw, 4rem); font-weight: 600; letter-spacing: -.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.readout .big .unit { font-size: 13px; color: var(--ink-muted); }
+.readout .zone { margin: 0; font-size: 14px; color: var(--ink-soft); }
+.readout .zone b { color: var(--accent); font-weight: 600; }
+.readout .reading { margin: 16px 0 0; max-width: 34ch; font-size: 14px; line-height: 1.75; color: var(--ink-soft); }
+.kv { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.kv li { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.kv li span { font-size: 13px; color: var(--ink-soft); }
+.kv li b { font-family: var(--font-mono); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.card {
+  background: var(--shell); border-radius: var(--r-shell); box-shadow: var(--shadow-card);
+  padding: clamp(20px, 3vw, 30px); margin-bottom: 26px;
+}
+.card-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 6px; }
+.card-head h2 { font-size: 15px; margin: 0; font-weight: 600; }
+.tabs { display: flex; gap: 4px; background: rgba(27,33,28,.04); padding: 4px; border-radius: var(--r-pill); }
+.tabs button {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  font-family: var(--font-sans); font-size: 13px; color: var(--ink-soft);
+  padding: 7px 15px; border-radius: var(--r-pill); transition: background-color .2s ease, color .2s ease;
+}
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { background: var(--ink); color: #F6F4EC; }
+#chart { width: 100%; height: 420px; margin-top: 10px; }
+.chart-note { margin: 2px 0 0; font-size: 12px; color: var(--ink-muted); }
+.chart-empty { height: 420px; display: flex; align-items: center; justify-content: center; color: var(--ink-muted); font-size: 14px; }
+
+.cells { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border-radius: var(--r-card); overflow: hidden; margin: 22px 0 0; }
+.cells > div { background: var(--shell); padding: 16px 16px 14px; }
+.cells .k { font-size: 12px; color: var(--ink-muted); margin: 0 0 6px; }
+.cells .v { font-family: var(--font-mono); font-size: 17px; font-weight: 600; margin: 0; font-variant-numeric: tabular-nums; }
+
+.tables { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-bottom: 10px; }
+.tbl-wrap { border-top: 1px solid var(--line); }
+.tbl-wrap h3 { font-size: 13px; font-weight: 600; margin: 16px 0 8px; color: var(--ink-soft); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-weight: 500; color: var(--ink-muted); font-size: 12px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+td { padding: 7px 0; border-bottom: 1px solid var(--line); }
+td.n, th.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: 0; }
+tbody td { color: var(--ink-soft); }
+tbody tr:first-child td { color: var(--ink); font-weight: 600; }
+
+@media (max-width: 880px) {
+  .readout { grid-template-columns: 1fr; align-items: start; }
+  .cells { grid-template-columns: 1fr 1fr; }
+  .tables { grid-template-columns: 1fr; gap: 6px; }
+  #chart { height: 320px; }
+  .card-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .tabs { width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tabs button { flex: 0 0 auto; white-space: nowrap; font-size: 12.5px; padding: 7px 12px; }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+</head>
+<body>
+
+<main class="wrap">
+  <div class="topbar">
+    <a class="back" href="index.html"><span class="arrow">←</span> 全部标的</a>
+    <div class="meta">2026-11-12 10:39</div>
+  </div>
+
+  <section class="readout">
+    <div>
+      <p class="kicker">港股科技 · 南方 · 场内价格</p>
+      <h1>恒生科技·南方</h1>
+      <p class="sub">520570 · 更新至 2026-11-12</p>
+      <div class="big"><span class="num">0.62</span><span class="unit">元</span></div>
+      <p class="zone">近一年 <b>8%</b> 分位 · <b>偏冷</b>　较均值 -19.5%</p>
+      <p class="reading">处在区间底部。便宜是真的，冷也是真的——先问自己能不能等。</p>
+    </div>
+    <ul class="kv">
+      <li><span>一年区间</span><b>0.59 – 0.95</b></li>
+      <li><span>均值 / 中位</span><b>0.78 / 0.77</b></li>
+      <li><span>20 / 80 分位</span><b>0.69 / 0.89</b></li>
+      <li><span>近 30 个交易日</span><b>-10.1%</b></li>
+    </ul>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>估值走势</h2>
+      <div class="tabs" role="tablist"><button role="tab" data-range="10y" aria-selected="true">近一年</button><button role="tab" data-range="day" aria-selected="false">日线 · 近一年</button></div>
+    </div>
+    <div id="chart" role="img" aria-label="恒生科技·南方 估值走势图"></div>
+    <p class="chart-note">虚线：20 / 80 分位与区间均值　·　点：最新值　·　ETF 用场内收盘价做价格分位</p>
+    <div class="cells" id="cells"></div>
+  </section>
+
+  <div class="list-head"><h2>区间数据</h2><div class="meta">最新在前</div></div>
+  <div class="tables">
+    <div class="tbl-wrap"><h3>月线 · 最近 12 期</h3><table><thead><tr><th>月份</th><th class='n'>数值</th></tr></thead><tbody><tr><td>2026-11</td><td class='n'>0.62</td></tr><tr><td>2026-10</td><td class='n'>0.59</td></tr><tr><td>2026-09</td><td class='n'>0.67</td></tr><tr><td>2026-08</td><td class='n'>0.74</td></tr><tr><td>2026-07</td><td class='n'>0.77</td></tr><tr><td>2026-06</td><td class='n'>0.72</td></tr><tr><td>2026-05</td><td class='n'>0.79</td></tr><tr><td>2026-04</td><td class='n'>0.79</td></tr><tr><td>2026-03</td><td class='n'>0.76</td></tr><tr><td>2026-02</td><td class='n'>0.84</td></tr><tr><td>2026-01</td><td class='n'>0.94</td></tr><tr><td>2025-12</td><td class='n'>0.92</td></tr></tbody></table></div>
+    <div class="tbl-wrap"><h3>日线 · 最近 10 个交易日</h3><table><thead><tr><th>交易日</th><th class='n'>数值</th></tr></thead><tbody><tr><td>11-12</td><td class='n'>0.62</td></tr><tr><td>11-11</td><td class='n'>0.64</td></tr><tr><td>11-10</td><td class='n'>0.64</td></tr><tr><td>11-09</td><td class='n'>0.64</td></tr><tr><td>11-06</td><td class='n'>0.64</td></tr><tr><td>11-05</td><td class='n'>0.65</td></tr><tr><td>11-04</td><td class='n'>0.62</td></tr><tr><td>11-03</td><td class='n'>0.61</td></tr><tr><td>11-02</td><td class='n'>0.60</td></tr><tr><td>10-30</td><td class='n'>0.59</td></tr></tbody></table></div>
+  </div>
+
+  <footer class="site">
+    <p class="note">数据来源 akshare：指数月线取乐咕乐股，个股估值取百度股市通，ETF 取东方财富场内行情；日线不取外部日频估值，而是用「最近一期月度估值 × 当日收盘 / 锚点日收盘」推算。分位 = 当前值在过去窗口内的位置。</p>
+    <p class="fine">UPDATE · 2026-11-12 10:39　|　本页仅用于自我提醒，不构成任何投资建议</p>
+  </footer>
+</main>
+<script>window.__SERIES__ = {"10y":{"labels":["2025-11","2025-12","2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11"],"values":[0.95,0.92,0.94,0.84,0.76,0.79,0.79,0.72,0.77,0.74,0.67,0.59,0.62],"stats":{"cur":0.62,"mean":0.78,"med":0.77,"p20":0.69,"p80":0.89,"hi":0.95,"lo":0.59,"pct":8.0,"vs_mean":-19.5},"daily":false},"day":{"labels":["2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-27","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-25","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-15","2026-01-16","2026-01-19","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-26","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-03","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-03","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21","2026-04-22","2026-04-23","2026-04-24","2026-04-27","2026-04-28","2026-04-29","2026-04-30","2026-05-06","2026-05-07","2026-05-08","2026-05-11","2026-05-12","2026-05-13","2026-05-14","2026-05-15","2026-05-18","2026-05-19","2026-05-20","2026-05-21","2026-05-22","2026-05-25","2026-05-26","2026-05-27","2026-05-28","2026-05-29","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-15","2026-06-16","2026-06-17","2026-06-18","2026-06-22","2026-06-23","2026-06-24","2026-06-25","2026-06-26","2026-06-29","2026-06-30","2026-07-01","2026-07-02","2026-07-03","2026-07-06","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-13","2026-07-14","2026-07-15","2026-07-16","2026-07-17","2026-07-20","2026-07-21","2026-07-22","2026-07-23","2026-07-24","2026-07-27","2026-07-28","2026-07-29","2026-07-30","2026-07-31","2026-08-03","2026-08-04","2026-08-05","2026-08-06","2026-08-07","2026-08-10","2026-08-11","2026-08-12","2026-08-13","2026-08-14","2026-08-17","2026-08-18","2026-08-19","2026-08-20","2026-08-21","2026-08-24","2026-08-25","2026-08-26","2026-08-27","2026-08-28","2026-08-31","2026-09-01","2026-09-02","2026-09-03","2026-09-04","2026-09-07","2026-09-08","2026-09-09","2026-09-10","2026-09-11","2026-09-14","2026-09-15","2026-09-16","2026-09-17","2026-09-18","2026-09-21","2026-09-22","2026-09-23","2026-09-24","2026-09-28","2026-09-29","2026-09-30","2026-10-08","2026-10-09","2026-10-12","2026-10-13","2026-10-14","2026-10-15","2026-10-16","2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-26","2026-10-27","2026-10-28","2026-10-29","2026-10-30","2026-11-02","2026-11-03","2026-11-04","2026-11-05","2026-11-06","2026-11-09","2026-11-10","2026-11-11","2026-11-12"],"values":[0.97,0.96,0.95,0.94,0.92,0.94,0.94,0.95,0.94,0.95,0.95,0.95,0.93,0.94,0.96,0.96,0.94,0.94,0.93,0.95,0.93,0.91,0.91,0.9,0.92,0.93,0.92,0.92,0.92,0.92,0.92,0.93,0.92,0.96,0.97,0.95,0.94,0.95,0.97,0.97,0.98,0.97,0.96,0.95,0.94,0.95,0.95,0.96,0.94,0.95,0.97,0.95,0.94,0.91,0.91,0.89,0.89,0.88,0.9,0.9,0.9,0.89,0.88,0.86,0.86,0.84,0.84,0.81,0.8,0.79,0.79,0.81,0.8,0.82,0.82,0.82,0.81,0.84,0.83,0.83,0.81,0.79,0.77,0.78,0.8,0.78,0.78,0.77,0.76,0.78,0.76,0.76,0.76,0.8,0.78,0.79,0.78,0.78,0.79,0.82,0.81,0.82,0.82,0.8,0.79,0.79,0.8,0.78,0.79,0.79,0.8,0.82,0.82,0.82,0.81,0.82,0.82,0.79,0.78,0.79,0.79,0.77,0.78,0.78,0.8,0.78,0.78,0.79,0.8,0.82,0.81,0.8,0.79,0.76,0.77,0.76,0.75,0.75,0.76,0.75,0.75,0.73,0.73,0.7,0.72,0.7,0.68,0.71,0.72,0.71,0.71,0.72,0.72,0.72,0.76,0.76,0.76,0.75,0.75,0.76,0.77,0.74,0.76,0.77,0.75,0.75,0.74,0.75,0.75,0.78,0.77,0.77,0.78,0.78,0.79,0.77,0.77,0.78,0.77,0.76,0.77,0.75,0.76,0.76,0.74,0.75,0.76,0.74,0.73,0.74,0.74,0.74,0.74,0.73,0.72,0.71,0.73,0.72,0.71,0.7,0.69,0.69,0.69,0.69,0.69,0.69,0.7,0.7,0.7,0.69,0.69,0.68,0.68,0.67,0.65,0.66,0.66,0.65,0.67,0.64,0.65,0.65,0.64,0.63,0.6,0.61,0.61,0.6,0.61,0.59,0.59,0.6,0.61,0.62,0.65,0.64,0.64,0.64,0.64,0.62],"stats":{"cur":0.62,"mean":0.8,"med":0.78,"p20":0.71,"p80":0.92,"hi":0.98,"lo":0.59,"pct":4.0,"vs_mean":-21.4},"daily":true}};</script>
+<script>
+(function () {
+  var C = {"ink": "#1B211C", "line": "#E3DFD3", "muted": "#8A948C", "accent": "#C03A2B", "cold": "#2F6A55", "shell": "#FFFDF8", "soft": "#4C554E", "accentSoft": "#F0DCD6"};
+  var S = window.__SERIES__;
+  var unit = "元";
+  var el = document.getElementById('chart');
+  var cells = document.getElementById('cells');
+
+  function cellHtml(st, key) {
+    var f = function (n) { return (n === undefined || n === null) ? '—' : Number(n).toFixed(2); };
+    var items = [
+      ['区间均值', f(st.mean)],
+      ['20 分位', f(st.p20)],
+      ['80 分位', f(st.p80)],
+      ['区间分位', Math.round(st.pct) + '%']
+    ];
+    return items.map(function (it) {
+      return '<div><p class="k">' + it[0] + '</p><p class="v">' + it[1] + '</p></div>';
+    }).join('');
+  }
+
+  if (!window.echarts) {
+    el.outerHTML = '<div class="chart-empty">图表脚本没有加载成功，请刷新页面</div>';
+    return;
+  }
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var chart = echarts.init(el, null, { renderer: 'canvas' });
+
+  function optionFor(rel) {
+    var d = S[rel];
+    var st = d.stats;
+    var isDay = !!d.daily;
+    return {
+      animation: !reduce,
+      animationDuration: 620,
+      animationEasing: 'cubicOut',
+      grid: { left: 6, right: 30, top: 16, bottom: 26, containLabel: true },
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: { type: 'line', lineStyle: { color: C.line, width: 1 } },
+        backgroundColor: C.shell,
+        borderColor: C.line,
+        borderWidth: 1,
+        padding: [8, 12],
+        textStyle: { color: C.ink, fontFamily: 'ui-monospace, SF Mono, Consolas, monospace', fontSize: 12 },
+        extraCssText: 'border-radius:10px;box-shadow:0 8px 20px -10px rgba(27,33,28,.25);',
+        formatter: function (ps) {
+          var p = ps[0];
+          return '<div style="color:#8A948C;font-size:11px;margin-bottom:3px">' + p.axisValue + '</div>' +
+                 '<div style="font-weight:600">' + Number(p.value).toFixed(2) + ' ' + unit + '</div>';
+        }
+      },
+      xAxis: {
+        type: 'category',
+        data: d.labels,
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: C.line } },
+        axisTick: { show: false },
+        splitLine: { show: false },
+        axisLabel: {
+          color: C.muted, fontSize: 11, fontFamily: 'ui-monospace, SF Mono, Consolas, monospace',
+          hideOverlap: true, margin: 12,
+          formatter: function (v) { return isDay ? v.slice(5) : v.replace('-', '.'); }
+        }
+      },
+      yAxis: {
+        type: 'value', scale: true,
+        axisLine: { show: false }, axisTick: { show: false },
+        splitLine: { show: true, lineStyle: { color: C.line, type: 'dashed', width: 1 } },
+        axisLabel: { color: C.muted, fontSize: 11, fontFamily: 'ui-monospace, SF Mono, Consolas, monospace', margin: 10 },
+        axisPointer: { label: { show: false } }
+      },
+      series: [{
+        type: 'line',
+        data: d.values,
+        showSymbol: false,
+        smooth: isDay ? 0.32 : 0.18,
+        lineStyle: { width: isDay ? 1.4 : 1.6, color: C.ink, opacity: isDay ? .78 : 1 },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(27,33,28,0.10)' },
+            { offset: 1, color: 'rgba(27,33,28,0.01)' }
+          ])
+        },
+        markArea: {
+          silent: true,
+          itemStyle: { color: 'rgba(192,58,43,0.045)' },
+          data: [[{ yAxis: st.p20 }, { yAxis: st.p80 }]]
+        },
+        markLine: {
+          silent: true, symbol: 'none',
+          label: { show: false },
+          data: [
+            { yAxis: st.p80, lineStyle: { color: C.accent, type: 'dashed', width: 1, opacity: .8 } },
+            { yAxis: st.p20, lineStyle: { color: C.cold, type: 'dashed', width: 1, opacity: .8 } },
+            { yAxis: st.mean, lineStyle: { color: C.muted, type: 'dashed', width: 1, opacity: .7 } }
+          ]
+        },
+        markPoint: {
+          symbol: 'circle', symbolSize: 9,
+          itemStyle: { color: C.accent, borderColor: '#F7F5EF', borderWidth: 2 },
+          label: {
+            show: true, position: 'left', distance: 9,
+            color: C.accent, fontSize: 12, fontWeight: 600,
+            fontFamily: 'ui-monospace, SF Mono, Consolas, monospace',
+            formatter: String(Number(d.values[d.values.length - 1]).toFixed(2))
+          },
+          data: [{ coord: [d.labels.length - 1, d.values[d.values.length - 1]] }]
+        }
+      }]
+    };
+  }
+
+  function render(rel) {
+    chart.setOption(optionFor(rel), true);
+    cells.innerHTML = cellHtml(S[rel].stats, rel);
+  }
+
+  var wanted = (location.search.match(/range=([a-z0-9]+)/) || [])[1];
+  var activeBtn = document.querySelector('.tabs button[aria-selected="true"]');
+  var initial = (wanted && S[wanted]) ? wanted
+    : (activeBtn ? activeBtn.dataset.range : Object.keys(S)[0]);
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+    b.setAttribute('aria-selected', b.dataset.range === initial ? 'true' : 'false');
+  });
+  render(initial);
+
+  Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (btn) {
+    btn.addEventListener('click', function () {
+      Array.prototype.forEach.call(document.querySelectorAll('.tabs button'), function (b) {
+        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+      });
+      render(btn.dataset.range);
+    });
+  });
+
+  var t;
+  window.addEventListener('resize', function () {
+    clearTimeout(t); t = setTimeout(function () { chart.resize(); }, 120);
+  });
+})();
+</script>
+<script>
+(function () {
+  // 只负责在允许动效时打开 .motion（主视觉的轻微浮动）；
+  // 正文永远默认可见 —— 关掉动效或脚本失败都不会出现空白段落。
+  if (!window.matchMedia) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  document.documentElement.classList.add('motion');
+})();
+</script>
+</body>
+</html>

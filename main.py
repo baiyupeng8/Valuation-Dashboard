@@ -49,8 +49,16 @@ TARGETS = [
         "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "硬科技",
     },
     {
-        "key": "hstech", "name": "恒生科技", "short": "恒生", "code": "513130", "page": "hstech.html",
-        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技",
+        "key": "hstech", "name": "恒生科技", "short": "华夏", "code": "513130", "page": "hstech.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技 · 华夏",
+    },
+    {
+        "key": "hstech_yf", "name": "恒生科技·易方达", "short": "易方达", "code": "513010", "page": "hstech-yf.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技 · 易方达",
+    },
+    {
+        "key": "hstech_nf", "name": "恒生科技·南方", "short": "南方", "code": "520570", "page": "hstech-nf.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技 · 南方",
     },
     {
         "key": "szzs", "name": "上证指数ETF", "short": "上证", "code": "510980", "page": "szzs.html",
@@ -178,8 +186,17 @@ def etf_daily(t):
     name = f"{t['code']}_etf.xlsx"
 
     def fetch():
-        df = ak.fund_etf_hist_em(symbol=t["code"], period="daily", adjust="qfq")
-        return df.rename(columns={"收盘": "价格"})
+        try:
+            df = ak.fund_etf_hist_em(symbol=t["code"], period="daily", adjust="qfq")
+            return df.rename(columns={"收盘": "价格"})
+        except Exception as exc:  # noqa: BLE001
+            # 东方财富会按 IP 限流（push2 断连），此时退到新浪，数据是不复权收盘，
+            # 与东财的前复权差异仅在分红日，对价格分位影响可忽略。
+            print(f"⚠️ 东财取数失败（{type(exc).__name__}），改用新浪源 {t['code']}")
+            prefix = "sh" if str(t["code"])[0] in "56" else "sz"
+            raw = ak.fund_etf_hist_sina(symbol=prefix + str(t["code"]))
+            raw = raw.rename(columns={"date": "日期", "close": "价格"})
+            return raw[["日期", "价格"]]
 
     def norm(raw):
         df = raw.copy()
