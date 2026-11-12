@@ -144,6 +144,11 @@ hr.rule { border: 0; border-top: 1px solid var(--line); margin: 0; }
 .seg button[aria-selected="true"] em { color: rgba(246,244,236,.6); }
 .panel { display: none; }
 .panel[data-active="1"] { display: block; }
+.basis-line {
+  display: flex; flex-wrap: wrap; gap: 4px 18px;
+  margin: 16px 0 -10px; font-size: 12.5px; line-height: 1.7; color: var(--ink-muted);
+}
+.basis-line span b { color: var(--ink-soft); font-weight: 600; }
 .panel .gauge { border-top: 0; padding-top: 26px; }
 .gauge-scale.compact { height: 88px; }
 .gauge-scale.compact .track { top: 26px; }
@@ -230,7 +235,7 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
 <main class="wrap">
   <div class="masthead">
     <div class="brand"><span class="dot"></span>BYP 估值温度计 <em>／ 每日收盘后更新</em></div>
-    <div class="meta">2026-11-12 11:32</div>
+    <div class="meta">2026-11-12 13:04</div>
   </div>
 
   <section class="hero">
@@ -243,6 +248,11 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
   </section>
 
   <nav class="seg" role="tablist" aria-label="标的分类"><button data-tab="index" aria-selected="true">指数宽基<em>5</em></button><button data-tab="sector" aria-selected="false">行业板块<em>20</em></button><button data-tab="overseas" aria-selected="false">海外港股<em>4</em></button><button data-tab="watch" aria-selected="false">我关注的<em>2</em></button></nav>
+  <div class="basis-line">
+    <span><b>读到的是什么</b>　指数与个股 = 市盈率 TTM（倍）· ETF = 场内收盘价（元）</span>
+    <span><b>分位</b>　当前值在近十年（不足十年按全部历史）中的位置，0% 最便宜、100% 最贵</span>
+    <span>点开任意标的可看完整的「数据口径」与三条虚线含义</span>
+  </div>
   <section class="panel" data-panel="index" data-active="1">
   <section class="gauge">
     <div class="head">
@@ -572,7 +582,7 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
 
   <footer class="site">
     <p class="note">指数与个股用市盈率（TTM），ETF 用场内收盘价——ETF 没有可靠的每日披露盈利，价格分位更诚实。分位 = 当前值在过去窗口内的位置。</p>
-    <p class="fine">DATA · AKSHARE / 中证指数 / 乐咕乐股 / 百度股市通 / 东方财富　|　UPDATE · 2026-11-12 11:32</p>
+    <p class="fine">DATA · AKSHARE / 中证指数 / 乐咕乐股 / 百度股市通 / 东方财富　|　UPDATE · 2026-11-12 13:04</p>
   </footer>
 </main>
 <script>

@@ -697,6 +697,11 @@ INDEX_CSS = """
 .seg button[aria-selected="true"] em { color: rgba(246,244,236,.6); }
 .panel { display: none; }
 .panel[data-active="1"] { display: block; }
+.basis-line {
+  display: flex; flex-wrap: wrap; gap: 4px 18px;
+  margin: 16px 0 -10px; font-size: 12.5px; line-height: 1.7; color: var(--ink-muted);
+}
+.basis-line span b { color: var(--ink-soft); font-weight: 600; }
 .panel .gauge { border-top: 0; padding-top: 26px; }
 .gauge-scale.compact { height: 88px; }
 .gauge-scale.compact .track { top: 26px; }
@@ -942,6 +947,11 @@ def render_index(items, updated):
   </section>
 
   <nav class="seg" role="tablist" aria-label="标的分类">{seg}</nav>
+  <div class="basis-line">
+    <span><b>读到的是什么</b>　指数与个股 = 市盈率 TTM（倍）· ETF = 场内收盘价（元）</span>
+    <span><b>分位</b>　当前值在近十年（不足十年按全部历史）中的位置，0% 最便宜、100% 最贵</span>
+    <span>点开任意标的可看完整的「数据口径」与三条虚线含义</span>
+  </div>
   {panels}
 
   <footer class="site">
@@ -1003,6 +1013,13 @@ DETAIL_CSS = """
 .kv li span { font-size: 13px; color: var(--ink-soft); }
 .kv li b { font-family: var(--font-mono); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 
+/* 数据口径：四条，两列排开，看数字之前先读这一段 */
+.basis { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; background: var(--line); border-radius: var(--r-card); overflow: hidden; margin: 0 0 28px; }
+.basis > div { background: var(--shell); padding: 16px 18px 18px; }
+.basis dt { font-size: 11px; letter-spacing: .09em; color: var(--ink-muted); margin: 0 0 7px; }
+.basis dd { margin: 0; font-size: 13px; line-height: 1.75; color: var(--ink-soft); }
+.basis dd b { color: var(--ink); font-weight: 600; }
+
 .card {
   background: var(--shell); border-radius: var(--r-shell); box-shadow: var(--shadow-card);
   padding: clamp(20px, 3vw, 30px); margin-bottom: 26px;
@@ -1041,6 +1058,7 @@ tbody tr:first-child td { color: var(--ink); font-weight: 600; }
   .readout { grid-template-columns: 1fr; align-items: start; }
   .cells { grid-template-columns: 1fr 1fr; }
   .tables { grid-template-columns: 1fr; gap: 6px; }
+  .basis { grid-template-columns: 1fr; }
   #chart { height: 320px; }
   .card-head { flex-direction: column; align-items: flex-start; gap: 10px; }
   .tabs { width: 100%; overflow-x: auto; scrollbar-width: none; }
@@ -1050,9 +1068,9 @@ tbody tr:first-child td { color: var(--ink); font-weight: 600; }
 """
 
 
-def _table(rows, head_col):
+def _table(rows, head_col, val_head):
     body = "".join(f"<tr><td>{d}</td><td class='n'>{v}</td></tr>" for d, v in rows)
-    return f"<table><thead><tr><th>{head_col}</th><th class='n'>数值</th></tr></thead><tbody>{body}</tbody></table>"
+    return f"<table><thead><tr><th>{head_col}</th><th class='n'>{val_head}</th></tr></thead><tbody>{body}</tbody></table>"
 
 
 def render_detail(t, series, updated):
@@ -1129,13 +1147,14 @@ def render_detail(t, series, updated):
         reading = "处在区间底部。便宜是真的，冷也是真的——先问自己能不能等。"
 
     # 月线表（最近 12 期）
+    val_head = f"{t['metric']}（{t['unit']}）"
     last_m = monthly.tail(12).iloc[::-1]
-    t1 = _table([(d.strftime("%Y-%m"), f"{v:.2f}") for d, v in zip(last_m["日期"], last_m["数值"])], "月份")
+    t1 = _table([(d.strftime("%Y-%m"), f"{v:.2f}") for d, v in zip(last_m["日期"], last_m["数值"])], "月份", val_head)
 
     t2 = ""
     if daily is not None and len(daily):
         last_d = daily.tail(10).iloc[::-1]
-        t2 = _table([(d.strftime("%m-%d"), f"{v:.2f}") for d, v in zip(last_d["日期"], last_d["数值"])], "交易日")
+        t2 = _table([(d.strftime("%m-%d"), f"{v:.2f}") for d, v in zip(last_d["日期"], last_d["数值"])], "交易日", val_head)
 
     tabs = [
         ("10y", f"近{span_word}"), ("5y", "近五年"), ("3y", "近三年"), ("1y", "近一年"),
@@ -1160,9 +1179,53 @@ def render_detail(t, series, updated):
     }
     data_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
 
-    legend_note = "虚线：20 / 80 分位与区间均值　·　点：最新值"
+    legend_note = "虚线：上 = 80 分位 · 中 = 区间均值 · 下 = 20 分位　·　点 = 最新值　·　阴影带 = 20–80 分位"
     if series["note"]:
         legend_note += f"　·　{series['note']}"
+
+    if t["kind"] == "etf":
+        metric_txt = (
+            '<b>场内价格</b>（元），即该 ETF 在交易所的日收盘价，不是基金净值。'
+            'ETF 没有可靠的每日披露盈利，用价格分位衡量“贵不贵”比勉强凑一个市盈率更诚实。'
+        )
+        source_txt = (
+            '东方财富场内日线（前复权）；被限流时退到新浪不复权收盘，并对份额拆分做回推复权'
+            '（相邻日涨跌超过 15% 视为拆分），避免断崖式假波动。<br>'
+            '月线 = 每月最后一个交易日的收盘价；日线 = 当日真实收盘价，无推算。'
+        )
+    else:
+        metric_txt = (
+            f'<b>{t["metric"]}</b>（倍）：总市值 ÷ 最近 12 个月净利润，滚动口径，'
+            '股价和盈利预期一变，这个数就跟着变。'
+        )
+        source_txt = (
+            '月度估值取' + ('乐咕乐股 / 中证指数' if t["kind"] == "index" else '百度股市通') +
+            '，收盘价取' + ('中证指数日线' if t["kind"] == "index" else '东方财富前复权日线') + '。<br>'
+            '月线 = 每月最后一个交易日的值，来自月度估值披露；'
+            '日线是推算值 = 最近一期月度估值 × 当日收盘 ÷ 锚点日收盘，不是外部日频估值。'
+        )
+
+    pct_txt = (
+        f'当前值在过去{span_word}窗口内全部样本中的升序位置：'
+        '<b>0%</b> 表示等于区间最低，<b>100%</b> 表示等于区间最高，<b>50%</b> 表示中位数。'
+        + ('样本为该窗口内的每个交易日收盘价。' if t["kind"] == "etf" else '样本为该窗口内的每月估值。')
+    )
+    line_txt = (
+        '<b>上虚线（朱砂）</b> = 80 分位，历史上只有 20% 的时间比现在更贵；'
+        '<b>中虚线（灰）</b> = 区间均值，所有样本的算术平均；'
+        '<b>下虚线（墨绿）</b> = 20 分位，历史上只有 20% 的时间比现在更便宜。'
+        '阴影带就是 20–80 分位之间，右侧红点是最新值。'
+    )
+
+    basis = "".join(
+        f"<div><dt>{k}</dt><dd>{v}</dd></div>"
+        for k, v in (
+            ("指标口径", metric_txt),
+            ("数据来源与频率", source_txt),
+            ("分位怎么算", pct_txt),
+            ("三条虚线分别是什么", line_txt),
+        )
+    )
 
     html = head(
         f"{t['name']} · 估值温度计",
@@ -1192,6 +1255,9 @@ def render_detail(t, series, updated):
       <li><span>近 30 个交易日</span><b>{f"{chg30:+.1f}%" if chg30 is not None else "—"}</b></li>
     </ul>
   </section>
+
+  <div class="list-head"><h2>数据口径</h2><div class="meta">先看这一段，再看数字</div></div>
+  <dl class="basis">{basis}</dl>
 
   <section class="card">
     <div class="card-head">
