@@ -29,39 +29,146 @@ import pandas as pd
 CACHE_DIR = "data_cache"
 os.makedirs(CACHE_DIR, exist_ok=True)
 
+TABS = {
+    "index": "指数宽基",
+    "sector": "行业板块",
+    "overseas": "海外港股",
+    "watch": "我关注的",
+}
+
+# tab 决定首页归属页签；group 只在行业板块页签里做小标题分组
 TARGETS = [
+    # —— 页签一：指数宽基 ——
     {
-        "key": "hs300", "name": "沪深300", "short": "沪深", "code": "000300", "page": "hs300.html",
+        "key": "hs300", "tab": "index", "group": "", "name": "沪深300", "short": "沪深", "code": "000300", "page": "hs300.html",
         "kind": "index", "lg": "沪深300", "cs": "000300", "tx": "sh000300",
-        "metric": "市盈率 TTM", "unit": "倍", "tag": "大盘蓝筹",
+        "metric": "市盈率 TTM", "unit": "倍", "tag": "大盘基准 · 510300",
     },
     {
-        "key": "zz500", "name": "中证500", "short": "中证", "code": "000905", "page": "zz500.html",
+        "key": "zz500", "tab": "index", "group": "", "name": "中证500", "short": "中证", "code": "000905", "page": "zz500.html",
         "kind": "index", "lg": "中证500", "cs": "000905", "tx": "sh000905",
-        "metric": "市盈率 TTM", "unit": "倍", "tag": "中盘成长",
+        "metric": "市盈率 TTM", "unit": "倍", "tag": "中盘成长 · 510500",
     },
     {
-        "key": "wly", "name": "五粮液", "short": "五粮", "code": "000858", "page": "wly.html",
-        "kind": "stock", "metric": "市盈率 TTM", "unit": "倍", "tag": "白酒",
+        "key": "kc50", "tab": "index", "group": "", "name": "科创50", "short": "科创", "code": "588000", "page": "kc50.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "硬科技 · 588000",
     },
     {
-        "key": "kc50", "name": "科创50", "short": "科创", "code": "588000", "page": "kc50.html",
-        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "硬科技",
+        "key": "cyb", "tab": "index", "group": "", "name": "创业板指", "short": "创业", "code": "159915", "page": "cyb.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "创新成长 · 159915",
     },
     {
-        "key": "hstech", "name": "恒生科技", "short": "华夏", "code": "513130", "page": "hstech.html",
+        "key": "sz50", "tab": "index", "group": "", "name": "上证50", "short": "上50", "code": "510050", "page": "sz50.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "超大盘 · 510050",
+    },
+
+    # —— 页签二：行业板块 ——
+    {
+        "key": "159928", "tab": "sector", "group": "大消费", "name": "主要消费", "short": "必选", "code": "159928", "page": "etf159928.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "必选消费 · 白酒食品",
+    },
+    {
+        "key": "161725", "tab": "sector", "group": "大消费", "name": "中证白酒", "short": "白酒", "code": "161725", "page": "etf161725.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "白酒龙头 · LOF",
+    },
+    {
+        "key": "159936", "tab": "sector", "group": "大消费", "name": "可选消费", "short": "可选", "code": "159936", "page": "etf159936.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "家电汽车 · 旅游家居",
+    },
+    {
+        "key": "159929", "tab": "sector", "group": "医药", "name": "医药卫生", "short": "医药", "code": "159929", "page": "etf159929.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "医药整体",
+    },
+    {
+        "key": "512120", "tab": "sector", "group": "医药", "name": "创新药", "short": "创药", "code": "512120", "page": "etf512120.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "弹性更大",
+    },
+    {
+        "key": "512480", "tab": "sector", "group": "科技 / 数字经济", "name": "半导体", "short": "半导体", "code": "512480", "page": "etf512480.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "国产替代主线",
+    },
+    {
+        "key": "515070", "tab": "sector", "group": "科技 / 数字经济", "name": "人工智能", "short": "AI", "code": "515070", "page": "etf515070.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "算力 · 应用 · 大模型",
+    },
+    {
+        "key": "515880", "tab": "sector", "group": "科技 / 数字经济", "name": "通信", "short": "通信", "code": "515880", "page": "etf515880.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "光模块 · 服务器",
+    },
+    {
+        "key": "159797", "tab": "sector", "group": "新能源", "name": "新能源", "short": "新能", "code": "159797", "page": "etf159797.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "光伏锂电储能",
+    },
+    {
+        "key": "159857", "tab": "sector", "group": "新能源", "name": "光伏产业", "short": "光伏", "code": "159857", "page": "etf159857.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "光伏细分",
+    },
+    {
+        "key": "159796", "tab": "sector", "group": "新能源", "name": "电池主题", "short": "电池", "code": "159796", "page": "etf159796.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "锂电 · 储能",
+    },
+    {
+        "key": "512880", "tab": "sector", "group": "金融", "name": "证券公司", "short": "证券", "code": "512880", "page": "etf512880.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "情绪风向标",
+    },
+    {
+        "key": "512800", "tab": "sector", "group": "金融", "name": "银行", "short": "银行", "code": "512800", "page": "etf512800.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "高股息低波动",
+    },
+    {
+        "key": "561080", "tab": "sector", "group": "金融", "name": "保险", "short": "保险", "code": "561080", "page": "etf561080.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "保险板块",
+    },
+    {
+        "key": "512400", "tab": "sector", "group": "周期 / 资源", "name": "有色金属", "short": "有色", "code": "512400", "page": "etf512400.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "铜铝稀土贵金属",
+    },
+    {
+        "key": "515220", "tab": "sector", "group": "周期 / 资源", "name": "煤炭", "short": "煤炭", "code": "515220", "page": "etf515220.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "能源周期",
+    },
+    {
+        "key": "159870", "tab": "sector", "group": "周期 / 资源", "name": "化工", "short": "化工", "code": "159870", "page": "etf159870.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "基础化工 · 新材料",
+    },
+    {
+        "key": "512200", "tab": "sector", "group": "地产 & 基建", "name": "房地产", "short": "地产", "code": "512200", "page": "etf512200.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "房地产",
+    },
+    {
+        "key": "516970", "tab": "sector", "group": "地产 & 基建", "name": "基建工程", "short": "基建", "code": "516970", "page": "etf516970.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "建筑 · 中字头",
+    },
+    {
+        "key": "515080", "tab": "sector", "group": "红利风格", "name": "中证红利", "short": "红利", "code": "515080", "page": "etf515080.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "高股息 · 低估值",
+    },
+
+    # —— 页签三：海外港股 ——
+    {
+        "key": "hstech", "tab": "overseas", "group": "恒生科技", "name": "恒生科技", "short": "华夏", "code": "513130", "page": "hstech.html",
         "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技 · 华夏",
     },
     {
-        "key": "hstech_yf", "name": "恒生科技·易方达", "short": "易方达", "code": "513010", "page": "hstech-yf.html",
+        "key": "hstech_yf", "tab": "overseas", "group": "恒生科技", "name": "恒生科技·易方达", "short": "易方达", "code": "513010", "page": "hstech-yf.html",
         "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技 · 易方达",
     },
     {
-        "key": "hstech_nf", "name": "恒生科技·南方", "short": "南方", "code": "520570", "page": "hstech-nf.html",
+        "key": "hstech_nf", "tab": "overseas", "group": "恒生科技", "name": "恒生科技·南方", "short": "南方", "code": "520570", "page": "hstech-nf.html",
         "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技 · 南方",
     },
     {
-        "key": "szzs", "name": "上证指数ETF", "short": "上证", "code": "510980", "page": "szzs.html",
+        "key": "cec", "tab": "overseas", "group": "中概互联", "name": "中概互联", "short": "中概", "code": "513050", "page": "cec.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "美股中概 · 513050",
+    },
+
+    # —— 页签四：我关注的 ——
+    {
+        "key": "wly", "tab": "watch", "group": "", "name": "五粮液", "short": "五粮", "code": "000858", "page": "wly.html",
+        "kind": "stock", "metric": "市盈率 TTM", "unit": "倍", "tag": "白酒",
+    },
+    {
+        "key": "szzs", "tab": "watch", "group": "", "name": "上证指数ETF", "short": "上证", "code": "510980", "page": "szzs.html",
         "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "汇添富 · 沪市宽基",
     },
 ]
@@ -181,6 +288,29 @@ def stock_monthly(t):
     return fetch_cached(name, f"{t['name']} 月线估值", fetch, _norm_monthly, max_age_days=45)
 
 
+def _de_split(df):
+    """新浪源给的是不复权收盘，遇到份额拆分（如半导体 512480 的两次 2:1）会在曲线上
+    留下断崖式的假暴涨暴跌。这里把「相邻日涨跌超过 15%」判为拆分，向前回推复权，
+    只保留一条连续的价格序列。东财的前复权数据本来连续，跑一遍也不会改动。"""
+    if df is None or df.empty or "价格" not in df.columns:
+        return df
+    df = df.sort_values("日期").reset_index(drop=True)
+    # 新浪源早期数据偶有 0 / 负数收盘（510050 的 2005 年就是这样），直接丢弃
+    df = df[df["价格"].astype(float) > 0].reset_index(drop=True)
+    if df.empty:
+        return df
+    p = df["价格"].astype(float).to_numpy()
+    scale = 1.0
+    adj = p.copy()
+    for i in range(len(p) - 2, -1, -1):
+        r = (p[i + 1] / p[i]) if p[i] else 1.0
+        if r > 1.15 or r < 0.86:
+            scale *= r
+        adj[i] = p[i] * scale
+    df["价格"] = adj
+    return df
+
+
 def etf_daily(t):
     """ETF 日线收盘（ETF 用价格分位，不用 PE）。"""
     name = f"{t['code']}_etf.xlsx"
@@ -207,7 +337,7 @@ def etf_daily(t):
     # 兼容老缓存（历史上 ETF 的收盘列曾被命名为「滚动市盈率」）
     if df is not None and "价格" not in df.columns and "滚动市盈率" in df.columns:
         df = df.rename(columns={"滚动市盈率": "价格"})
-    return df
+    return _de_split(df)
 
 
 def index_close(t):
@@ -508,6 +638,12 @@ INDEX_CSS = """
 .gauge .head h2 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: .02em; }
 .gauge .head .meta { display: flex; gap: 14px; }
 .gauge-scale { position: relative; height: 124px; }
+/* 挂标签时整体下移，给标签留出 3–4 行的高度，避免顶到小标题 */
+.gauge-scale.labelled { height: 152px; }
+.gauge-scale.labelled .track { top: 90px; }
+.gauge-scale.labelled .band { top: 84px; }
+.gauge-scale.labelled .tick { top: 104px; }
+.gauge-scale.labelled .mark { top: 89px; }
 .gauge-scale .track {
   position: absolute; left: 0; right: 0; top: 62px; height: 10px; border-radius: var(--r-pill);
   background: linear-gradient(90deg, #D8E7DE 0%, #EFEDE0 46%, #F6E2DD 74%, #EFCEC7 100%);
@@ -540,6 +676,41 @@ INDEX_CSS = """
 .gauge .summary { display: flex; flex-wrap: wrap; gap: 22px; margin-top: 8px; }
 .gauge .summary span { font-size: 13px; color: var(--ink-soft); }
 .gauge .summary b { font-family: var(--font-mono); font-size: 13px; color: var(--ink); font-weight: 600; margin-left: 4px; }
+
+/* 页签：指数宽基 / 行业板块 / 海外港股 / 我关注的 */
+.seg {
+  display: flex; gap: 4px; padding: 5px; margin: 2px 0 -4px;
+  background: rgba(27,33,28,.045); border-radius: var(--r-pill);
+  width: fit-content; max-width: 100%; overflow-x: auto; scrollbar-width: none;
+}
+.seg::-webkit-scrollbar { display: none; }
+.seg button {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  font-family: var(--font-sans); font-size: 14px; color: var(--ink-soft);
+  padding: 9px 18px; border-radius: var(--r-pill);
+  display: inline-flex; align-items: baseline; gap: 7px; white-space: nowrap;
+  transition: background-color .2s ease, color .2s ease;
+}
+.seg button:hover { color: var(--ink); }
+.seg button em { font-style: normal; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+.seg button[aria-selected="true"] { background: var(--ink); color: #F6F4EC; }
+.seg button[aria-selected="true"] em { color: rgba(246,244,236,.6); }
+.panel { display: none; }
+.panel[data-active="1"] { display: block; }
+.panel .gauge { border-top: 0; padding-top: 26px; }
+.gauge-scale.compact { height: 88px; }
+.gauge-scale.compact .track { top: 26px; }
+.gauge-scale.compact .band { top: 20px; }
+.gauge-scale.compact .tick { top: 40px; }
+.gauge-scale.compact .mark { top: 25px; }
+.group-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 30px 0 2px; margin-top: 26px; border-top: 1px solid var(--line);
+}
+.group-head h3 { font-size: 14px; font-weight: 600; margin: 0; letter-spacing: .04em; }
+.group-head .meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); }
+.group .rows { margin-bottom: 0; }
+.group:first-child .group-head { margin-top: 0; border-top: 0; }
 
 .list-head { display: flex; justify-content: space-between; align-items: baseline; padding: 34px 0 12px; }
 .list-head h2 { font-size: 15px; font-weight: 600; margin: 0; }
@@ -598,77 +769,157 @@ footer.site .fine { font-family: var(--font-mono); font-size: 11px; color: var(-
   .mark .tag span:not(.short) { display: none; }
   .mark .tag .short { display: inline; }
   .mark .tag { font-size: 11px; gap: 4px; bottom: calc(18px + var(--lane, 0) * 16px); }
+  /* 四个页签在窄屏折成两行，不做横向滚动，避免最后一个被藏起来 */
+  .seg { width: 100%; flex-wrap: wrap; gap: 3px; }
+  .seg button { flex: 1 1 calc(50% - 4px); justify-content: center; font-size: 13px; padding: 8px 10px; }
+  .group-head { padding-top: 22px; margin-top: 20px; }
+  .panel .gauge { padding-top: 22px; }
 }
 """
 
 
-def build_gauge_marks(items):
-    """把分位映射到 0–100 的刻度上；挨得近的标签分到不同「行」，避免叠字。"""
+def build_gauge_marks(items, show_labels=True):
+    """把分位映射到 0–100 的刻度上；挨得近的标签分到不同「行」，避免叠字。
+    标的过多时只留圆点不挂标签，避免几十个标签堆成一团。"""
     lanes = []  # 每行已经占用的 x 位置
     marks = []
     for it in sorted(items, key=lambda x: x["pct"]):
         p = max(2, min(98, float(it["pct"])))
         lane = 0
-        while True:
-            if lane >= len(lanes):
-                lanes.append([])
-                break
-            if all(abs(x - p) >= 13 for x in lanes[lane]):
-                break
-            lane += 1
-        lanes[lane].append(p)
+        if show_labels:
+            while True:
+                if lane >= len(lanes):
+                    lanes.append([])
+                    break
+                if all(abs(x - p) >= 13 for x in lanes[lane]):
+                    break
+                lane += 1
+            lanes[lane].append(p)
 
         cls = "hot" if p >= 80 else ("cold" if p < 20 else "")
         align = " l" if p < 9 else (" r" if p > 91 else "")
+        tag = ""
+        if show_labels:
+            tag = (
+                f'<div class="tag{align}"><span>{it["name"]}</span>'
+                f'<span class="short">{it.get("short") or it["name"][:2]}</span>'
+                f"<i>{p:.0f}%</i></div>"
+            )
         marks.append(
             f'<div class="mark" style="left:{p:.1f}%;--lane:{lane}">'
-            f'<div class="pin {cls}"></div>'
-            f'<div class="tag{align}"><span>{it["name"]}</span>'
-            f'<span class="short">{it.get("short") or it["name"][:2]}</span>'
-            f'<i>{p:.0f}%</i></div></div>'
+            f'<div class="pin {cls}"></div>{tag}</div>'
         )
     return "".join(marks)
 
 
 def cn_count(n):
     """3–10 的中文数目，用于「六个标的」这类文案。"""
-    words = {3: "三个", 4: "四个", 5: "五个", 6: "六个", 7: "七个", 8: "八个", 9: "九个", 10: "十个"}
+    words = {1: "一个", 2: "两个", 3: "三个", 4: "四个", 5: "五个", 6: "六个", 7: "七个", 8: "八个", 9: "九个", 10: "十个"}
     return words.get(n, f"{n} 个")
 
 
-def render_index(items, updated):
-    avg = sum(i["pct"] for i in items) / len(items) if items else 50
+def _mood_of(avg):
+    if avg < 25:
+        return "偏凉", "整体还在低位，耐心比手速值钱。"
+    if avg < 45:
+        return "温和", "价格不算贵，但也谈不上便宜。"
+    if avg < 65:
+        return "微暖", "多数标的回到中枢附近，看估值不如看结构。"
+    if avg < 80:
+        return "在升温", "越往上，越该问自己凭什么。"
+    return "烫手", "这里是牛市的尾巴，也是最容易忘事的地方。"
+
+
+def _zone_counts(items):
     counts = {}
     for i in items:
         counts[i["zone"]] = counts.get(i["zone"], 0) + 1
+    return "".join(
+        f"<span>{k}<b>{counts[k]}</b></span>"
+        for k in ("偏贵", "偏热", "中枢", "偏低", "偏冷")
+        if counts.get(k)
+    )
 
-    if avg < 25:
-        mood, mood_txt = "偏凉", "整体还在低位，耐心比手速值钱。"
-    elif avg < 45:
-        mood, mood_txt = "温和", "价格不算贵，但也谈不上便宜。"
-    elif avg < 65:
-        mood, mood_txt = "微暖", "多数标的回到中枢附近，看估值不如看结构。"
-    elif avg < 80:
-        mood, mood_txt = "在升温", "越往上，越该问自己凭什么。"
-    else:
-        mood, mood_txt = "烫手", "这里是牛市的尾巴，也是最容易忘事的地方。"
 
-    summary_bits = []
-    for key, text in (("偏贵", "偏贵"), ("偏热", "偏热"), ("中枢", "中枢"), ("偏低", "偏低"), ("偏冷", "偏冷")):
-        if counts.get(key):
-            summary_bits.append(f"<span>{text}<b>{counts[key]}</b></span>")
-
-    rows = []
-    for i in items:
-        z_cls = "hot" if i["pct"] >= 80 else ("cold" if i["pct"] < 20 else "")
-        rows.append(f"""
+def _row(i):
+    z_cls = "hot" if i["pct"] >= 80 else ("cold" if i["pct"] < 20 else "")
+    return f"""
         <a class="row" href="{i['page']}">
           <div class="name"><b>{i['name']}</b><small>{i['code']} · {i['tag']}<span class="delta-m {i['delta_cls']}">　近30日 {i['delta']}</span></small></div>
           <div class="trend">{i['spark']}<span class="delta {i['delta_cls']}">近30日 {i['delta']}</span></div>
           <div class="val">{i['cur']:.2f}<em>{i['unit']}</em></div>
           <div class="badge {z_cls}"><span>{i['zone']}</span><span class="pct">{i['pct']:.0f}%</span></div>
           <div class="go" aria-hidden="true">→</div>
-        </a>""")
+        </a>"""
+
+
+def _panel_body(items):
+    """页签内部：温度刻度 + 读数行；行业板块按 group 加小标题。"""
+    avg = sum(i["pct"] for i in items) / len(items) if items else 50
+    show_labels = len(items) <= 5
+
+    if items and items[0]["tab"] == "sector" and all(i.get("group") for i in items):
+        order = []
+        for i in items:
+            if i["group"] not in order:
+                order.append(i["group"])
+        blocks = []
+        for g in order:
+            g_items = [i for i in items if i["group"] == g]
+            g_avg = sum(x["pct"] for x in g_items) / len(g_items)
+            blocks.append(f"""
+    <div class="group">
+      <div class="group-head"><h3>{g}</h3><div class="meta">{len(g_items)} 只 · 平均 {g_avg:.0f}%</div></div>
+      <ul class="rows">{"".join(_row(i) for i in g_items)}</ul>
+    </div>""")
+        body = "".join(blocks)
+        head_line = '<div class="list-head"><h2>逐标的读数</h2><div class="meta">按板块分组 · 分位取近十年，不足十年按全史</div></div>'
+    else:
+        body = f'<ul class="rows">{"".join(_row(i) for i in items)}</ul>'
+        head_line = '<div class="list-head"><h2>逐标的读数</h2><div class="meta">分位取近十年 · 不足十年按全史</div></div>'
+
+    gauge_meta = "虚线区间 = 20–80 分位" if show_labels else "分位取近十年，不足十年按全史"
+
+    return f"""
+  <section class="gauge">
+    <div class="head">
+      <h2>{cn_count(len(items))}标的 · 温度刻度</h2>
+      <div class="meta">{gauge_meta}</div>
+    </div>
+    <div class="gauge-scale{' labelled' if show_labels else ' compact'}">
+      <div class="track"></div>
+      <div class="band" style="left:20%; right:20%"></div>
+      <div class="tick" style="left:0"><span>0</span></div>
+      <div class="tick" style="left:20%"><span>20</span></div>
+      <div class="tick" style="left:50%"><span>50</span></div>
+      <div class="tick" style="left:80%"><span>80</span></div>
+      <div class="tick" style="left:100%"><span>100</span></div>
+      {build_gauge_marks(items, show_labels)}
+    </div>
+    <div class="summary"><span>平均<b>{avg:.0f}%</b></span>{_zone_counts(items)}</div>
+  </section>
+  {head_line}
+  {body}"""
+
+
+def render_index(items, updated):
+    avg = sum(i["pct"] for i in items) / len(items) if items else 50
+    mood, mood_txt = _mood_of(avg)
+
+    tab_order = [k for k in TABS if any(i["tab"] == k for i in items)]
+    counts_by_tab = {k: sum(1 for i in items if i["tab"] == k) for k in tab_order}
+
+    seg = "".join(
+        f'<button data-tab="{k}" aria-selected="{"true" if n == 0 else "false"}">'
+        f"{TABS[k]}<em>{counts_by_tab[k]}</em></button>"
+        for n, k in enumerate(tab_order)
+    )
+
+    panels = "".join(
+        f'<section class="panel" data-panel="{k}" data-active="{"1" if n == 0 else "0"}">'
+        f"{_panel_body([i for i in items if i['tab'] == k])}</section>"
+        for n, k in enumerate(tab_order)
+    )
 
     html = head(
         "估值温度计 · BYP",
@@ -690,32 +941,37 @@ def render_index(items, updated):
     <div class="art"><img src="images/bull-ink.png" alt="线描公牛" width="540" height="540"></div>
   </section>
 
-  <section class="gauge">
-    <div class="head">
-      <h2>温度刻度 · 分位 0–100</h2>
-      <div class="meta">虚线区间 = 20–80 分位</div>
-    </div>
-    <div class="gauge-scale">
-      <div class="track"></div>
-      <div class="band" style="left:20%; right:20%"></div>
-      <div class="tick" style="left:0"><span>0</span></div>
-      <div class="tick" style="left:20%"><span>20</span></div>
-      <div class="tick" style="left:50%"><span>50</span></div>
-      <div class="tick" style="left:80%"><span>80</span></div>
-      <div class="tick" style="left:100%"><span>100</span></div>
-      {build_gauge_marks(items)}
-    </div>
-    <div class="summary">{''.join(summary_bits)}</div>
-  </section>
-
-  <div class="list-head"><h2>逐标的读数</h2><div class="meta">分位取近十年 · 不足十年按全史</div></div>
-  <ul class="rows">{''.join(rows)}</ul>
+  <nav class="seg" role="tablist" aria-label="标的分类">{seg}</nav>
+  {panels}
 
   <footer class="site">
-    <p class="note">指数与个股用市盈率（TTM），ETF 用场内收盘价——ETF 没有可靠的每日披露盈利，价格分位更诚实。</p>
-    <p class="fine">DATA · AKSHARE / 中证指数 / 乐咕乐股 / 百度股市通　|　UPDATE · {updated}</p>
+    <p class="note">指数与个股用市盈率（TTM），ETF 用场内收盘价——ETF 没有可靠的每日披露盈利，价格分位更诚实。分位 = 当前值在过去窗口内的位置。</p>
+    <p class="fine">DATA · AKSHARE / 中证指数 / 乐咕乐股 / 百度股市通 / 东方财富　|　UPDATE · {updated}</p>
   </footer>
 </main>
+<script>
+(function () {{
+  var btns = document.querySelectorAll('.seg button');
+  var panels = document.querySelectorAll('.panel');
+  function show(tab) {{
+    Array.prototype.forEach.call(btns, function (x) {{
+      x.setAttribute('aria-selected', x.dataset.tab === tab ? 'true' : 'false');
+    }});
+    Array.prototype.forEach.call(panels, function (p) {{
+      p.dataset.active = p.dataset.panel === tab ? '1' : '0';
+    }});
+  }}
+  Array.prototype.forEach.call(btns, function (b) {{
+    b.addEventListener('click', function () {{
+      show(b.dataset.tab);
+      try {{ history.replaceState(null, '', '#' + b.dataset.tab); }} catch (e) {{}}
+    }});
+  }});
+  // 支持 index.html#sector 直接打开某个页签
+  var h = (location.hash || '').replace('#', '');
+  if (h && document.querySelector('.panel[data-panel="' + h + '"]')) show(h);
+}})();
+</script>
 <script>{SHARED_JS}</script>
 </body>
 </html>
@@ -1167,6 +1423,7 @@ def main():
 
             cards.append({
                 "name": t["name"], "code": t["code"], "page": t["page"], "tag": t["tag"],
+                "tab": t.get("tab", "index"), "group": t.get("group", ""),
                 "cur": st["cur"], "pct": st["pct"], "zone": zone,
                 "unit": "元" if t["kind"] == "etf" else "倍",
                 "spark": sparkline(spark_vals),
