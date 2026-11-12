@@ -93,6 +93,10 @@ def _read_cache(path):
 
 
 def _fresh(path):
+    # CI 上 git checkout 会把所有文件 mtime 刷成“现在”，
+    # 所以由工作流显式设置 FORCE_REFRESH=1 来强制走一次网络，失败再降级读缓存。
+    if os.environ.get("FORCE_REFRESH"):
+        return False
     if not os.path.exists(path):
         return False
     mtime = datetime.fromtimestamp(os.path.getmtime(path)).strftime("%Y-%m-%d")
