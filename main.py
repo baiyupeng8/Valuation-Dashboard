@@ -46,11 +46,15 @@ TARGETS = [
     },
     {
         "key": "kc50", "name": "科创50", "short": "科创", "code": "588000", "page": "kc50.html",
-        "kind": "etf", "metric": "价格", "unit": "元", "tag": "硬科技",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "硬科技",
     },
     {
         "key": "hstech", "name": "恒生科技", "short": "恒生", "code": "513130", "page": "hstech.html",
-        "kind": "etf", "metric": "价格", "unit": "元", "tag": "港股科技",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "港股科技",
+    },
+    {
+        "key": "szzs", "name": "上证指数ETF", "short": "上证", "code": "510980", "page": "szzs.html",
+        "kind": "etf", "metric": "场内价格", "unit": "元", "tag": "汇添富 · 沪市宽基",
     },
 ]
 
@@ -440,7 +444,7 @@ def head(title, extra_css="", extra_head=""):
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
-<meta name="description" content="个人估值温度计：沪深300、中证500、五粮液、科创50、恒生科技的估值分位与走势">
+<meta name="description" content="个人估值温度计：{('、'.join(t['name'] for t in TARGETS))}的估值分位与走势">
 <link rel="icon" href="images/logo.png" type="image/png">
 <style>{BASE_CSS}{extra_css}</style>
 {extra_head}
@@ -609,6 +613,12 @@ def build_gauge_marks(items):
     return "".join(marks)
 
 
+def cn_count(n):
+    """3–10 的中文数目，用于「六个标的」这类文案。"""
+    words = {3: "三个", 4: "四个", 5: "五个", 6: "六个", 7: "七个", 8: "八个", 9: "九个", 10: "十个"}
+    return words.get(n, f"{n} 个")
+
+
 def render_index(items, updated):
     avg = sum(i["pct"] for i in items) / len(items) if items else 50
     counts = {}
@@ -658,7 +668,7 @@ def render_index(items, updated):
     <div class="copy">
       <p class="kicker">A 股 · 近十年估值分位</p>
       <h1>今天，<br>市场<b>{mood}</b>。</h1>
-      <p class="lede">五个标的平均处在近十年 <strong>{avg:.0f}%</strong> 分位。{mood_txt}</p>
+      <p class="lede">{cn_count(len(items))}标的平均处在近十年 <strong>{avg:.0f}%</strong> 分位。{mood_txt}</p>
     </div>
     <div class="art"><img src="images/bull-ink.png" alt="线描公牛" width="540" height="540"></div>
   </section>
@@ -777,10 +787,16 @@ def render_detail(t, series, updated):
     daily = series["daily"]
 
     ranges = {}
+    seen_starts = set()
     for key, yrs in (("10y", 10), ("5y", 5), ("3y", 3), ("1y", 1)):
         w = window(monthly, yrs)
         if w is None:
             continue
+        start = w["日期"].iloc[0]
+        # 历史不足时，多个窗口会落到同一个起点，只保留第一个（最长的那一档）
+        if start in seen_starts:
+            continue
+        seen_starts.add(start)
         st = window_stats(w)
         if st is None:
             continue
@@ -823,7 +839,10 @@ def render_detail(t, series, updated):
     updated_short = updated.split(" ")[0]
 
     span_years = len(base["labels"]) / 12.0
-    span_word = "十年" if span_years >= 9 else f"{max(1, round(span_years))}年"
+    span_word = "十年" if span_years >= 9 else {
+        1: "一年", 2: "两年", 3: "三年", 4: "四年", 5: "五年",
+        6: "六年", 7: "七年", 8: "八年",
+    }.get(max(1, round(span_years)), f"{max(1, round(span_years))}年")
 
     if pct >= 80:
         reading = "站在 80 分位以上，这个位置往上靠的是情绪，不是业绩。"
