@@ -918,7 +918,7 @@ def render_detail(t, series, updated):
   </div>
 
   <footer class="site">
-    <p class="note">数据来源 akshare：指数月线取乐咕乐股，官方日线校准取中证指数，个股月线取百度股市通，ETF 取东方财富场内行情。分位 = 当前值在过去窗口内的位置。</p>
+    <p class="note">数据来源 akshare：指数月线取乐咕乐股，个股估值取百度股市通，ETF 取东方财富场内行情；日线不取外部日频估值，而是用「最近一期月度估值 × 当日收盘 / 锚点日收盘」推算。分位 = 当前值在过去窗口内的位置。</p>
     <p class="fine">UPDATE · {updated}　|　本页仅用于自我提醒，不构成任何投资建议</p>
   </footer>
 </main>
